@@ -92,6 +92,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)/ModuleIntegrationTest</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -138,6 +139,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)/ModuleIntegrationTest</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -185,15 +187,26 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="comm\SockTcp.h" />
+    <ClInclude Include="eventmanager\EventManager.h" />
     <ClInclude Include="ModuleIntegrationTest.h" />
     <ClInclude Include="ModuleIntegrationTestDlg.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="sensor\SensorData.h" />
+    <ClInclude Include="sensor\SensorModule.h" />
+    <ClInclude Include="sensor\SICKLaserScanner.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="util\CriticalSection.h" />
+    <ClInclude Include="util\semaphore.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="comm\SockTcp.cpp" />
+    <ClCompile Include="eventmanager\EventManager.cpp" />
     <ClCompile Include="ModuleIntegrationTest.cpp" />
     <ClCompile Include="ModuleIntegrationTestDlg.cpp" />
+    <ClCompile Include="sensor\SensorModule.cpp" />
+    <ClCompile Include="sensor\SICKLaserScanner.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

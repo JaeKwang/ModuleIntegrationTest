@@ -4,7 +4,9 @@
 // 들어 있는 포함 파일입니다.
 
 #pragma once
-
+#define _CRT_SECURE_NO_WARNINGS
+#define _SCL_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #ifndef VC_EXTRALEAN
 #define VC_EXTRALEAN            // 거의 사용되지 않는 내용은 Windows 헤더에서 제외합니다.
 #endif
@@ -34,11 +36,8 @@
 #include <afxcontrolbars.h>     // MFC의 리본 및 컨트롤 막대 지원
 
 
-
-
-
-
-
+#include "eventmanager\EventManager.h"
+#include "sensor\SensorData.h"
 
 
 #ifdef _UNICODE
@@ -51,4 +50,4 @@
 #endif
 #endif
 
-
+extern eventManager::CEventManager *g_eventManager;

@@ -6,3 +6,4 @@
 #include "stdafx.h"
 
 
+eventManager::CEventManager *g_eventManager = new eventManager::CEventManager();

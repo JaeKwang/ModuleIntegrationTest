@@ -13,6 +13,30 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\util">
+      <UniqueIdentifier>{4cbc9461-273f-4b5e-ac0c-32240f1d66bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\util">
+      <UniqueIdentifier>{4c59e714-f3a4-459b-afbb-bdb8187a9bd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\comm">
+      <UniqueIdentifier>{7e968b69-43c1-44b8-89bf-acbec90434b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\comm">
+      <UniqueIdentifier>{42b84a8e-4fd2-4798-9694-07a85198bff9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\eventmanager">
+      <UniqueIdentifier>{0f297b62-d71c-4f04-b70b-c701a0993827}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\eventmanager">
+      <UniqueIdentifier>{9c8341d1-3b5e-4569-856a-77bef37ac4fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\sensor">
+      <UniqueIdentifier>{0915c378-1404-4890-9a02-549cf504d28e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\sensor">
+      <UniqueIdentifier>{2d073156-abcf-4b80-b8c5-418d64c2f49a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -33,6 +57,27 @@
     <ClInclude Include="Resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="comm\SockTcp.h">
+      <Filter>헤더 파일\comm</Filter>
+    </ClInclude>
+    <ClInclude Include="eventmanager\EventManager.h">
+      <Filter>헤더 파일\eventmanager</Filter>
+    </ClInclude>
+    <ClInclude Include="util\CriticalSection.h">
+      <Filter>헤더 파일\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\semaphore.h">
+      <Filter>헤더 파일\util</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\SensorData.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\SensorModule.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\SICKLaserScanner.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModuleIntegrationTest.cpp">
@@ -43,6 +88,18 @@
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="comm\SockTcp.cpp">
+      <Filter>소스 파일\comm</Filter>
+    </ClCompile>
+    <ClCompile Include="eventmanager\EventManager.cpp">
+      <Filter>소스 파일\eventmanager</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\SICKLaserScanner.cpp">
+      <Filter>소스 파일\sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\SensorModule.cpp">
+      <Filter>소스 파일\sensor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

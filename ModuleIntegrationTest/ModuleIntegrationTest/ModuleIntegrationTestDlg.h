@@ -3,7 +3,9 @@
 //
 
 #pragma once
-
+#include "afxcmn.h"
+#include "afxwin.h"
+#include "sensor\SensorModule.h"
 
 // CModuleIntegrationTestDlg 대화 상자
 class CModuleIntegrationTestDlg : public CDialogEx
@@ -24,6 +26,9 @@ public:
 // 구현입니다.
 protected:
 	HICON m_hIcon;
+	sensor::CSensorModule ** m_sensor;
+
+	void UpdateUI();
 
 	// 생성된 메시지 맵 함수
 	virtual BOOL OnInitDialog();
@@ -31,4 +36,28 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	void DrawDoubleBuffering();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	CListCtrl m_listLaserScanData;
+	CEdit m_editLaser1IP1;
+	CEdit m_editLaser1IP2;
+	CEdit m_editLaser1IP3;
+	CEdit m_editLaser1IP4;
+	CEdit m_editLaser1Port;
+	CEdit m_editLaser1Res;
+	CEdit m_editLaser1Start;
+	CEdit m_editLaser1End;
+	CEdit m_editLaser1State;
+	CEdit m_editLaser2IP1;
+	CEdit m_editLaser2IP2;
+	CEdit m_editLaser2IP3;
+	CEdit m_editLaser2IP4;
+	CEdit m_editLaser2Port;
+	CEdit m_editLaser2State;
+	CEdit m_editLaser2Res;
+	CEdit m_editLaser2Start;
+	CEdit m_editLaser2End;
+	afx_msg void OnBnClickedButtonLaser1Connect();
 };
