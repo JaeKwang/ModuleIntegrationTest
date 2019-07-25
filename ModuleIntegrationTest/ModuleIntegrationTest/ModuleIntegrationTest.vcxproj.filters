@@ -37,6 +37,15 @@
     <Filter Include="헤더 파일\sensor">
       <UniqueIdentifier>{2d073156-abcf-4b80-b8c5-418d64c2f49a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\sensor\driver">
+      <UniqueIdentifier>{ba9c39f9-9114-46d7-aa3b-520e3c9ef198}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\sensor\driver">
+      <UniqueIdentifier>{ff63ed5f-901e-429c-b116-24e1980dcd10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\robot">
+      <UniqueIdentifier>{3a63eb94-2f24-4604-9b36-9037649586c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -78,6 +87,30 @@
     <ClInclude Include="sensor\SICKLaserScanner.h">
       <Filter>헤더 파일\sensor</Filter>
     </ClInclude>
+    <ClInclude Include="util\ini.h">
+      <Filter>헤더 파일\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\PINIReadWriter.h">
+      <Filter>헤더 파일\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\SystemCheck.h">
+      <Filter>헤더 파일\util</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\ComizoaIO.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\IOHub.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\driver\ceSDK.h">
+      <Filter>헤더 파일\sensor\driver</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\driver\ceSDKDef.h">
+      <Filter>헤더 파일\sensor\driver</Filter>
+    </ClInclude>
+    <ClInclude Include="robot\IOList.h">
+      <Filter>헤더 파일\robot</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModuleIntegrationTest.cpp">
@@ -100,6 +133,24 @@
     </ClCompile>
     <ClCompile Include="sensor\SensorModule.cpp">
       <Filter>소스 파일\sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="util\ini.cpp">
+      <Filter>소스 파일\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\PINIReadWriter.cpp">
+      <Filter>소스 파일\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\SystemCheck.cpp">
+      <Filter>소스 파일\util</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\ComizoaIO.cpp">
+      <Filter>소스 파일\sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\IOHub.cpp">
+      <Filter>소스 파일\sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\driver\ceSDK.cpp">
+      <Filter>소스 파일\sensor\driver</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

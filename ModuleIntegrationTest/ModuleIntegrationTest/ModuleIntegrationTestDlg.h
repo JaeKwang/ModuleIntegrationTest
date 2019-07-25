@@ -6,6 +6,7 @@
 #include "afxcmn.h"
 #include "afxwin.h"
 #include "sensor\SensorModule.h"
+#include "sensor\IOHub.h"
 
 // CModuleIntegrationTestDlg 대화 상자
 class CModuleIntegrationTestDlg : public CDialogEx
@@ -27,10 +28,12 @@ public:
 protected:
 	HICON m_hIcon;
 	sensor::CSensorModule ** m_sensor;
+	sensor::CIOHub * m_IOHub;
 	LaserScanData m_LaserData1;
 
 	void UpdateUI();
 	void UILaserScanDataUpdate(sensor::CSensorModule *, int);
+	void UIComizoaDataUpdate();
 	// 생성된 메시지 맵 함수
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -67,4 +70,11 @@ public:
 	afx_msg void OnBnClickedButtonLaser2Connect();
 	afx_msg void OnBnClickedButtonLaser1Reset();
 	afx_msg void OnBnClickedButtonLaser2Reset();
+	CEdit m_editComizoaID;
+	CEdit m_editComizoaState;
+	CListCtrl m_listComizoaData;
+	afx_msg void OnLvnItemchangedListComizoaData(NMHDR *pNMHDR, LRESULT *pResult);
+	CStatic m_staticIOData;
+	afx_msg void OnBnClickedButtonComizoaConnect();
+	afx_msg void OnBnClickedButtonComizoaReset();
 };

@@ -21,6 +21,7 @@ namespace eventManager {
 		// 센서 모듈 Level
 		WARN_INVALID_THREAD_PERIOD,
 		WARN_INVALID_DATA_CHECK_COUNT,
+		WARN_INVALID_COMIZOA_ID,
 		WARN_RESTRICTED_STATE,
 
 
@@ -31,6 +32,16 @@ namespace eventManager {
 		ERROR_CONNECT_FAILED,
 		ERROR_RESET_FAILED,
 		ERROR_DISCONNECT_FAILED,
+		// IO Hub
+		ERROR_INITIALIZATION_FAILED,
+		ERROR_FILE_READ_FAILED,
+		ERROR_NOT_DEFINED_PIN,
+		ERROR_NOT_MATCHED_DIO_PIN_NUMBER,
+		ERROR_DAEMON_IS_NOT_RUNNING,
+		ERROR_LOADING_LIBRARY_FAILED,
+		ERROR_LOADING_DEVICE_FAILED,
+		ERROR_SEARCH_DEVICE_FAILED,
+		ERROR_IO_PIN_SETTING_FAILED,
 	};
 	enum eMessageType {
 		MSG_ERROR = 1,
@@ -59,17 +70,27 @@ namespace eventManager {
 
 			// warn
 			// [센서모듈]
-			m_mEventCode[WARN_INVALID_THREAD_PERIOD] = "Detecting an inappropriate thread period parameter variation";
-			m_mEventCode[WARN_INVALID_DATA_CHECK_COUNT] = "Detecting an inappropriate data check count parameter variation";
+			m_mEventCode[WARN_INVALID_THREAD_PERIOD] = "Detect an inappropriate thread period parameter variation";
+			m_mEventCode[WARN_INVALID_DATA_CHECK_COUNT] = "Detect an inappropriate data check count parameter variation";
 			m_mEventCode[WARN_RESTRICTED_STATE] = "Limit changes due to state constraints";
+			m_mEventCode[WARN_INVALID_COMIZOA_ID] = "Comizoa ID is invalied";
 
 			// Error
 			// [센서모듈]
+			m_mEventCode[ERROR_INITIALIZATION_FAILED] = "Initialization failed";
 			m_mEventCode[ERROR_CONNECT_FAILED] = "Connect failed";
 			m_mEventCode[ERROR_RESET_FAILED] = "Reset failed";
 			m_mEventCode[ERROR_DISCONNECT_FAILED] = "Disconnect failed";
 			m_mEventCode[ERROR_EXCEED_THREAD_CYCLE] = "Runtime exceeds thread period";
 			m_mEventCode[ERROR_DATA_CHECK_COUNT_REACHED] = "Over data check count";
+			m_mEventCode[ERROR_FILE_READ_FAILED] = "Reading a file is failed";
+			m_mEventCode[ERROR_NOT_DEFINED_PIN] = "Detect access not defined pin number";
+			m_mEventCode[ERROR_NOT_MATCHED_DIO_PIN_NUMBER] = "Not matched DIO pin number with detected pin number";
+			m_mEventCode[ERROR_DAEMON_IS_NOT_RUNNING] = "The ceSDKDaemon.exe is not running";
+			m_mEventCode[ERROR_LOADING_LIBRARY_FAILED] = "Loading library is failed";
+			m_mEventCode[ERROR_LOADING_DEVICE_FAILED] = "Loading device is failed";
+			m_mEventCode[ERROR_SEARCH_DEVICE_FAILED] = "Searching device is failed";
+			m_mEventCode[ERROR_IO_PIN_SETTING_FAILED] = "DIO module pin setting failed";
 
 		}
 		eMessageType m_MsgType;
@@ -100,6 +121,7 @@ namespace eventManager {
 	public:
 		CEventManager();
 		virtual ~CEventManager();
+		void setMainDlg(CDialogEx *a);
 		int PushTask(eMessageType, std::string, eEventCode, bool, bool);
 		std::string toString() { return m_ErrorList; }
 	};

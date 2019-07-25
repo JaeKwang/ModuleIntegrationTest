@@ -192,19 +192,30 @@
     <ClInclude Include="ModuleIntegrationTest.h" />
     <ClInclude Include="ModuleIntegrationTestDlg.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="robot\IOList.h" />
+    <ClInclude Include="sensor\ComizoaIO.h" />
+    <ClInclude Include="sensor\driver\ceSDK.h" />
+    <ClInclude Include="sensor\driver\ceSDKDef.h" />
+    <ClInclude Include="sensor\IOHub.h" />
     <ClInclude Include="sensor\SensorData.h" />
     <ClInclude Include="sensor\SensorModule.h" />
     <ClInclude Include="sensor\SICKLaserScanner.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="util\CriticalSection.h" />
+    <ClInclude Include="util\ini.h" />
+    <ClInclude Include="util\PINIReadWriter.h" />
     <ClInclude Include="util\semaphore.h" />
+    <ClInclude Include="util\SystemCheck.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="comm\SockTcp.cpp" />
     <ClCompile Include="eventmanager\EventManager.cpp" />
     <ClCompile Include="ModuleIntegrationTest.cpp" />
     <ClCompile Include="ModuleIntegrationTestDlg.cpp" />
+    <ClCompile Include="sensor\ComizoaIO.cpp" />
+    <ClCompile Include="sensor\driver\ceSDK.cpp" />
+    <ClCompile Include="sensor\IOHub.cpp" />
     <ClCompile Include="sensor\SensorModule.cpp" />
     <ClCompile Include="sensor\SICKLaserScanner.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -213,6 +224,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="util\ini.cpp" />
+    <ClCompile Include="util\PINIReadWriter.cpp" />
+    <ClCompile Include="util\SystemCheck.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModuleIntegrationTest.rc" />

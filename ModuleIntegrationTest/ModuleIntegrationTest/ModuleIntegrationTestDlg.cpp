@@ -15,6 +15,7 @@
 
 using namespace sensor;
 using namespace eventManager;
+using namespace IO_List;
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
 
 class CAboutDlg : public CDialogEx
@@ -82,6 +83,10 @@ void CModuleIntegrationTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_LASER2_RES, m_editLaser2Res);
 	DDX_Control(pDX, IDC_EDIT_LASER2_START, m_editLaser2Start);
 	DDX_Control(pDX, IDC_EDIT_LASER2_STOP, m_editLaser2End);
+	DDX_Control(pDX, IDC_EDIT_COMIZOA_ID, m_editComizoaID);
+	DDX_Control(pDX, IDC_EDIT_COMIZOA_STATE, m_editComizoaState);
+	DDX_Control(pDX, IDC_LIST_COMIZOA_DATA, m_listComizoaData);
+	DDX_Control(pDX, IDC_STATIC_COMIZOA_PIN_NAME, m_staticIOData);
 }
 
 BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
@@ -95,6 +100,9 @@ BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_LASER2_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Connect)
 	ON_BN_CLICKED(IDC_BUTTON_LASER1_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Reset)
 	ON_BN_CLICKED(IDC_BUTTON_LASER2_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Reset)
+	ON_NOTIFY(NM_CLICK, IDC_LIST_COMIZOA_DATA, &CModuleIntegrationTestDlg::OnLvnItemchangedListComizoaData)
+	ON_BN_CLICKED(IDC_BUTTON_COMIZOA_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonComizoaConnect)
+	ON_BN_CLICKED(IDC_BUTTON_COMIZOA_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonComizoaReset)
 END_MESSAGE_MAP()
 
 
@@ -133,9 +141,10 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 	g_eventManager->PushTask(MSG_INFO, "", INFO_PROGRAM_START, true, false);
 
 	// LMS 2, Gyro 1, Cancard 1, Motion 1, ComizoaIO 1
-	m_sensor = new sensor::CSensorModule *[6];
+	m_sensor = new CSensorModule *[6];
 	m_sensor[0] = new CSICKLaserScanner("LMS_Front", LMS1xx, "192.168.1.161", 2111, false);
 	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", LMS1xx, "192.168.0.1", 2111, false);
+	m_IOHub = new CIOHub("./inifiles/SAMSUNG_AMR_IO_List.ini");
 
 	UpdateUI();
 
@@ -237,6 +246,7 @@ void CModuleIntegrationTestDlg::OnTimer(UINT_PTR nIDEvent)
 		// UI Update
 		UILaserScanDataUpdate(m_sensor[0], 0);
 		UILaserScanDataUpdate(m_sensor[1], 1);
+		UIComizoaDataUpdate();
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -304,6 +314,40 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	}
 	m_listLaserScanData.InsertItem(0, _T("Front"));
 	m_listLaserScanData.InsertItem(1, _T("Rear"));
+
+	// Comizoa UI
+	//UI Update
+	m_editComizoaID.SetWindowText(CA2T(std::to_string(m_IOHub->getComizoaID()).c_str()));
+	m_listComizoaData.DeleteAllItems();
+	m_listComizoaData.InsertColumn(0, _T("PinNum"), LVCFMT_LEFT, 100);
+	for (int i = 0; i < m_IOHub->getDIOModuleNumber(); i++)
+		m_listComizoaData.InsertColumn(i + 1, CA2CT(("DIO" + std::to_string(i)).c_str()), LVCFMT_CENTER, 100);
+
+	int nMaxNum = 0;
+	DIOModule* dioModule = m_IOHub->getDIOModule();
+	for (int i = 0; i < m_IOHub->getDIOModuleNumber(); i++) {
+		int nPin = dioModule[i].nDINumber + dioModule[i].nDONumber;
+		if (nMaxNum < nPin)
+			nMaxNum = nPin;
+	}
+	for (int i = 0; i < nMaxNum; i++)
+		m_listComizoaData.InsertItem(i + 1, CA2CT(("Pin" + std::to_string(i)).c_str()));
+
+	// update IO data		
+	IOPinType * in = m_IOHub->getDIModule();
+	IOPinType * out = m_IOHub->getDOModule();
+
+	int errorCode;
+	for (int i = 0; i < PIN_SIZE; i++) {
+		bool bValue = m_IOHub->bitRead((eDI_Code)i, &errorCode);
+		if (errorCode == RETURN_NON_ERROR)
+			m_listComizoaData.SetItemText(in[i].nPinBase + in[i].nPinPosition, in[i].nDIONumber + 1, _T("-"));
+	}
+	for (int i = 0; i < POUT_SIZE; i++) {
+		bool bValue = m_IOHub->bitRead((eDO_Code)i, &errorCode);
+		if (errorCode == RETURN_NON_ERROR)
+			m_listComizoaData.SetItemText(out[i].nPinBase + out[i].nPinPosition, out[i].nDIONumber + 1, _T("-"));
+	}
 }
 
 void CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Connect()
@@ -374,6 +418,51 @@ void CModuleIntegrationTestDlg::UILaserScanDataUpdate(sensor::CSensorModule * in
 	}
 }
 
+void CModuleIntegrationTestDlg::UIComizoaDataUpdate() {
+	switch (m_IOHub->getStatus()) {
+	case STATE_INIT:
+		m_editComizoaState.SetWindowTextW(_T("Init"));
+		break;
+	case STATE_PROGRESSING:
+		m_editComizoaState.SetWindowTextW(_T("Prog"));
+		break;
+	case STATE_RUN:
+		m_editComizoaState.SetWindowTextW(_T("Run"));
+		break;
+	case STATE_ERROR:
+		m_editComizoaState.SetWindowTextW(_T("Error"));
+		break;
+	}
+
+	// Print Data
+	if (m_IOHub->getStatus() == STATE_RUN) {
+		// get IO data		
+		DIOModule * dioModule = m_IOHub->getDIOModule();
+		IOPinType * in = m_IOHub->getDIModule();
+		IOPinType * out = m_IOHub->getDOModule();
+
+		int errorCode;
+		for (int i = 0; i < PIN_SIZE; i++) {
+			bool bValue = m_IOHub->bitRead((eDI_Code)i, &errorCode);
+			if (errorCode == RETURN_NON_ERROR) {
+				if (bValue)
+					m_listComizoaData.SetItemText(in[i].nPinBase + in[i].nPinPosition, in[i].nDIONumber + 1, _T("TRUE"));
+				else
+					m_listComizoaData.SetItemText(in[i].nPinBase + in[i].nPinPosition, in[i].nDIONumber + 1, _T("FALSE"));
+			}
+		}
+		for (int i = 0; i < POUT_SIZE; i++) {
+			bool bValue = m_IOHub->bitRead((eDO_Code)i, &errorCode);
+			if (errorCode == RETURN_NON_ERROR) {
+				if (bValue)
+					m_listComizoaData.SetItemText(out[i].nPinBase + out[i].nPinPosition, out[i].nDIONumber + 1, _T("TRUE"));
+				else
+					m_listComizoaData.SetItemText(out[i].nPinBase + out[i].nPinPosition, out[i].nDIONumber + 1, _T("FALSE"));
+			}
+		}
+	}
+}
+
 void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Connect()
 {
 	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[1]);
@@ -410,4 +499,43 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Reset()
 void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Reset()
 {
 	m_sensor[1]->Reset();
+}
+
+
+void CModuleIntegrationTestDlg::OnLvnItemchangedListComizoaData(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	NMLVCUSTOMDRAW* nmcd = (NMLVCUSTOMDRAW*)pNMHDR;
+
+	int row = nmcd->iIconEffect;
+	int col = nmcd->iIconPhase - 1;
+
+	int errCode;
+	IOPinType pin;
+
+	errCode = m_IOHub->findPin(col, row, &pin);
+	if(errCode != RETURN_NON_ERROR)
+		m_staticIOData.SetWindowText(CA2T(("-\n" + std::to_string(col+1) + ", " + std::to_string(row+1)).c_str()));
+	else {
+		m_staticIOData.SetWindowText(CA2T((pin.strPinName + "\n" + std::to_string(col + 1) + ", " + std::to_string(row + 1)).c_str()));
+		if (m_IOHub->bitRead(pin.nDIONumber, pin.nPinBase, pin.nPinPosition, &errCode))
+			m_IOHub->bitSet(pin.nDIONumber, pin.nPinBase, pin.nPinPosition, false);
+		else
+			m_IOHub->bitSet(pin.nDIONumber, pin.nPinBase, pin.nPinPosition, true);
+	}
+	*pResult = 0;
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonComizoaConnect()
+{
+	CString str;
+	m_editComizoaID.GetWindowTextW(str);
+	m_IOHub->setComizoaID(_ttoi(str));
+	m_IOHub->Connect();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonComizoaReset()
+{
+	m_IOHub->Reset();
 }
