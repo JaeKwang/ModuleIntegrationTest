@@ -9,6 +9,7 @@
 
 #include "sensor\SICKLaserScanner.h"
 #include "sensor\SICKGuide.h"
+#include "Sensor\GyroSensor.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -101,6 +102,13 @@ void CModuleIntegrationTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE2_MARKER, m_editGuideDevice2Marker);
 	DDX_Control(pDX, IDC_EDIT_GUIDE_STATE, m_editGuideState);
 	DDX_Control(pDX, IDC_EDIT_GUIDE_PORT, m_editGuidePort);
+	DDX_Control(pDX, IDC_EDIT_GYRO_PORT, m_editGyroPort);
+	DDX_Control(pDX, IDC_EDIT_GYRO_BAUDRATE, m_editGyroBaudrate);
+	DDX_Control(pDX, IDC_EDIT_GYRO_YAW, m_editGyroYaw);
+	DDX_Control(pDX, IDC_EDIT_GYRO_PITCH, m_editGyroPitch);
+	DDX_Control(pDX, IDC_EDIT_GYRO_ROLL, m_editGyroRoll);
+	DDX_Control(pDX, IDC_EDIT_GYRO_STATE, m_editGyroState);
+	DDX_Control(pDX, IDC_LIST3, m_listEventManager);
 }
 
 BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
@@ -119,6 +127,9 @@ BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_COMIZOA_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonComizoaReset)
 	ON_BN_CLICKED(IDC_BUTTON_GUIDE_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonGuideConnect)
 	ON_BN_CLICKED(IDC_BUTTON_GUIDE_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonGuideReset)
+	ON_BN_CLICKED(IDC_BUTTON_GYRO_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonGyroConnect)
+	ON_BN_CLICKED(IDC_BUTTON_GYRO_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonGyroReset)
+	ON_BN_CLICKED(IDC_BUTTON_ERRORCLEAR, &CModuleIntegrationTestDlg::OnBnClickedButtonErrorclear)
 END_MESSAGE_MAP()
 
 
@@ -160,9 +171,10 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 	m_sensor = new CSensorModule *[5];
 	m_sensor[0] = new CSICKLaserScanner("LMS_Front", LMS1xx, "192.168.1.161", 2111, false);
 	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", LMS1xx, "192.168.0.1", 2111, false);
-	m_sensor[2] = new CSICKGuide("Sensor1", 3, 125, 100, 2);
+	m_sensor[2] = new CSICKGuide("Guide", 3, 125, 100, 2);
 	((CSICKGuide*)m_sensor[2])->setDeviceID(0, 0x18a);
 	((CSICKGuide*)m_sensor[2])->setDeviceID(1, 0x18b);
+	m_sensor[3] = new CGyroSensor("Gyro", 4, 115200);
 
 	m_IOHub = new CIOHub("./inifiles/SAMSUNG_AMR_IO_List.ini");
 	
@@ -268,6 +280,8 @@ void CModuleIntegrationTestDlg::OnTimer(UINT_PTR nIDEvent)
 		UILaserScanDataUpdate(m_sensor[1], 1);
 		UIComizoaDataUpdate();
 		UIGuideDataUpdate();
+		UIGyroDataUpdate();
+		UIEventManagerUpdate();
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -378,11 +392,11 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	}
 
 	// Guide Sensor
-	CSICKGuide* s = dynamic_cast<CSICKGuide*>(m_sensor[2]);
-	m_editGuideDeviceNum.SetWindowText(CA2T(std::to_string(s->getDeviceNum()).c_str()));
-	m_editGuideDeviceID1.SetWindowText(CA2T(std::to_string(s->getDeviceID(0)).c_str()));
-	m_editGuideDeviceID2.SetWindowText(CA2T(std::to_string(s->getDeviceID(1)).c_str()));
-	m_editGuidePort.SetWindowText(CA2T(std::to_string(s->getPort()).c_str()));
+	CSICKGuide* guide = dynamic_cast<CSICKGuide*>(m_sensor[2]);
+	m_editGuideDeviceNum.SetWindowText(CA2T(std::to_string(guide->getDeviceNum()).c_str()));
+	m_editGuideDeviceID1.SetWindowText(CA2T(std::to_string(guide->getDeviceID(0)).c_str()));
+	m_editGuideDeviceID2.SetWindowText(CA2T(std::to_string(guide->getDeviceID(1)).c_str()));
+	m_editGuidePort.SetWindowText(CA2T(std::to_string(guide->getPort()).c_str()));
 	m_editGuideDevice1Left.SetWindowText(_T("-"));
 	m_editGuideDevice1Centor.SetWindowText(_T("-"));
 	m_editGuideDevice1Right.SetWindowText(_T("-"));
@@ -391,6 +405,14 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_editGuideDevice2Centor.SetWindowText(_T("-"));
 	m_editGuideDevice2Right.SetWindowText(_T("-"));
 	m_editGuideDevice2Marker.SetWindowText(_T("-"));
+
+	// Gyro Sensor
+	CGyroSensor* gyro = dynamic_cast<CGyroSensor*>(m_sensor[3]);
+	m_editGyroPort.SetWindowText(CA2T(std::to_string(gyro->GetPort()).c_str()));
+	m_editGyroBaudrate.SetWindowText(CA2T(std::to_string(gyro->GetBaudrate()).c_str()));
+	m_editGyroYaw.SetWindowText(_T("-"));
+	m_editGyroPitch.SetWindowText(_T("-"));
+	m_editGyroRoll.SetWindowText(_T("-"));
 }
 
 
@@ -544,6 +566,44 @@ void CModuleIntegrationTestDlg::UIGuideDataUpdate() {
 }
 
 
+void CModuleIntegrationTestDlg::UIGyroDataUpdate() {
+	switch (m_sensor[3]->getStatus())
+	{
+	case STATE_INIT:
+		m_editGyroState.SetWindowTextW(_T("Init"));
+		break;
+	case STATE_PROGRESSING:
+		m_editGyroState.SetWindowTextW(_T("Progress"));
+		break;
+	case STATE_RUN:
+		m_editGyroState.SetWindowTextW(_T("Run"));
+		break;
+	case STATE_ERROR:
+		m_editGyroState.SetWindowTextW(_T("Error"));
+		break;
+	}
+
+	if (m_sensor[3]->getStatus() == STATE_RUN)
+	{
+		double dYaw, dPitch, dRoll;
+		((CGyroSensor *)m_sensor[3])->getData(&dYaw, &dPitch, &dRoll);
+
+		m_editGyroYaw.SetWindowText(CA2CT(std::to_string(dYaw).c_str()));
+		m_editGyroPitch.SetWindowText(CA2CT(std::to_string(dPitch).c_str()));
+		m_editGyroRoll.SetWindowText(CA2CT(std::to_string(dRoll).c_str()));
+	}
+}
+
+
+void CModuleIntegrationTestDlg::UIEventManagerUpdate() {
+	m_listEventManager.ResetContent();
+	vector<vector<CEventNode>> list = g_eventManager->getErrorArrayList();
+	map<eEventCode, string> table = g_eventManager->getEventCodeTable();
+	for (int i = 0; i < list.size(); i++)
+		for (int j = 0; j < list[i].size(); j++) 
+			m_listEventManager.AddString(CA2T((list[i][j].m_eventTarget +" : " + table[list[i][j].m_eventCode]).c_str()));
+}
+
 void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Connect()
 {
 	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[1]);
@@ -635,4 +695,28 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonGuideConnect()
 void CModuleIntegrationTestDlg::OnBnClickedButtonGuideReset()
 {
 	m_sensor[2]->Reset();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonGyroConnect()
+{
+	CGyroSensor* s = dynamic_cast<CGyroSensor*>(m_sensor[3]);
+	CString str;
+	m_editGuidePort.GetWindowTextW(str);
+	s->SetPort(_ttoi(str));
+	m_editGyroBaudrate.GetWindowTextW(str);
+	s->SetBaudrate(_ttoi(str));
+	m_sensor[3]->Connect();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonGyroReset()
+{
+	m_sensor[3]->Reset();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonErrorclear()
+{
+	g_eventManager->clearError();
 }

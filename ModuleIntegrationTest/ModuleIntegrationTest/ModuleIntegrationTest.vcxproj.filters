@@ -114,6 +114,12 @@
     <ClInclude Include="sensor\SICKGuide.h">
       <Filter>헤더 파일\sensor</Filter>
     </ClInclude>
+    <ClInclude Include="sensor\GyroSensor.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="comm\SerialComm.h">
+      <Filter>헤더 파일\comm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModuleIntegrationTest.cpp">
@@ -157,6 +163,12 @@
     </ClCompile>
     <ClCompile Include="sensor\SICKGuide.cpp">
       <Filter>소스 파일\sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\GyroSensor.cpp">
+      <Filter>소스 파일\sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="comm\SerialComm.cpp">
+      <Filter>소스 파일\comm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

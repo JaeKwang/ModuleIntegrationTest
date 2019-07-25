@@ -187,6 +187,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="comm\SerialComm.h" />
     <ClInclude Include="comm\SockTcp.h" />
     <ClInclude Include="eventmanager\EventManager.h" />
     <ClInclude Include="ModuleIntegrationTest.h" />
@@ -196,6 +197,7 @@
     <ClInclude Include="sensor\ComizoaIO.h" />
     <ClInclude Include="sensor\driver\ceSDK.h" />
     <ClInclude Include="sensor\driver\ceSDKDef.h" />
+    <ClInclude Include="sensor\GyroSensor.h" />
     <ClInclude Include="sensor\IOHub.h" />
     <ClInclude Include="sensor\SensorData.h" />
     <ClInclude Include="sensor\SensorModule.h" />
@@ -210,12 +212,14 @@
     <ClInclude Include="util\SystemCheck.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="comm\SerialComm.cpp" />
     <ClCompile Include="comm\SockTcp.cpp" />
     <ClCompile Include="eventmanager\EventManager.cpp" />
     <ClCompile Include="ModuleIntegrationTest.cpp" />
     <ClCompile Include="ModuleIntegrationTestDlg.cpp" />
     <ClCompile Include="sensor\ComizoaIO.cpp" />
     <ClCompile Include="sensor\driver\ceSDK.cpp" />
+    <ClCompile Include="sensor\GyroSensor.cpp" />
     <ClCompile Include="sensor\IOHub.cpp" />
     <ClCompile Include="sensor\SensorModule.cpp" />
     <ClCompile Include="sensor\SICKGuide.cpp" />

@@ -56,6 +56,7 @@ int CSensorModule::ThreadFunction_StateMachine(CSensorModule *sensor) {
 						g_eventManager->PushTask(MSG_ERROR, sensor->getSensorName(), ERROR_CONNECT_FAILED, true, true);
 						sensor->m_eState = STATE_ERROR;
 					}
+					start = clock();
 				}
 				break;
 			case STATE_PROGRESSING:
@@ -74,6 +75,7 @@ int CSensorModule::ThreadFunction_StateMachine(CSensorModule *sensor) {
 						g_eventManager->PushTask(MSG_ERROR, sensor->getSensorName(), ERROR_DISCONNECT_FAILED, true, true);
 						sensor->m_eState = STATE_ERROR;
 					}
+					start = clock();
 				}
 				else if (cmd == CMD_ERROR)
 					sensor->m_eState = STATE_ERROR;
@@ -83,6 +85,7 @@ int CSensorModule::ThreadFunction_StateMachine(CSensorModule *sensor) {
 					sensor->m_eState = STATE_PROGRESSING;
 					// Reset이 성공하면 , 아니면 Error
 					if (sensor->ResetAct() == RETURN_NON_ERROR) {
+						g_eventManager->clearError(sensor->getSensorName());
 						g_eventManager->PushTask(MSG_INFO, sensor->getSensorName(), INFO_RESET_SUCCEED, true, false);
 						sensor->m_eState = STATE_RUN;
 					}
@@ -90,6 +93,7 @@ int CSensorModule::ThreadFunction_StateMachine(CSensorModule *sensor) {
 						g_eventManager->PushTask(MSG_ERROR, sensor->getSensorName(), ERROR_RESET_FAILED, true, true);
 						sensor->m_eState = STATE_INIT;
 					}
+					start = clock();
 				}
 				break;
 			}

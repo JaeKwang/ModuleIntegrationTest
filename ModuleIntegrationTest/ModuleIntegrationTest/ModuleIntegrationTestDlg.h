@@ -35,6 +35,8 @@ protected:
 	void UILaserScanDataUpdate(sensor::CSensorModule *, int);
 	void UIComizoaDataUpdate();
 	void UIGuideDataUpdate();
+	void UIGyroDataUpdate();
+	void UIEventManagerUpdate();
 	// 생성된 메시지 맵 함수
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -93,4 +95,15 @@ public:
 	afx_msg void OnBnClickedButtonGuideConnect();
 	afx_msg void OnBnClickedButtonGuideReset();
 	CEdit m_editGuidePort;
+	CEdit m_editGyroPort;
+	CEdit m_editGyroBaudrate;
+	CEdit m_editGyroYaw;
+	CEdit m_editGyroPitch;
+	CEdit m_editGyroRoll;
+	CEdit m_editGyroState;
+	afx_msg void OnBnClickedButton14();
+	afx_msg void OnBnClickedButtonGyroConnect();
+	afx_msg void OnBnClickedButtonGyroReset();
+	CListBox m_listEventManager;
+	afx_msg void OnBnClickedButtonErrorclear();
 };

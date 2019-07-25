@@ -2,15 +2,25 @@
 #include "eventmanager\EventManager.h"
 #include <direct.h>
 #include <string>
+#include <algorithm>
 
 #define LOGLEVEL 4
 
 using namespace eventManager;
+using namespace std;
 
 CEventManager::CEventManager()
 	: m_isThreadLoop(false)
 {
 	_mkdir("./logfiles");
+	m_pINIReaderWriter = new PINIReadWriter("./inifiles/EVENT_List.ini");
+	if (m_pINIReaderWriter->ParseError() < 0)
+		g_eventManager->PushTask(MSG_ERROR, "EventManager", ERROR_FILE_READ_FAILED, true, false);
+	for (int i = 0; i < 5000; i++) {
+		string strError = m_pINIReaderWriter->getStringValue("EVENT_DESCRIPTION", to_string(i), "");
+		if (strcmp(strError.c_str(), "") != 0)
+			m_EventCodeTable[(eEventCode)i] = strError;
+	}
 }
 
 CEventManager::~CEventManager()
@@ -18,7 +28,7 @@ CEventManager::~CEventManager()
 	clearError();
 }
 
-int CEventManager::PushTask(eMessageType m, std::string t, eEventCode e, bool bFileSave, bool bSendACS)
+int CEventManager::PushTask(eMessageType m, string t, eEventCode e, bool bFileSave, bool bSendACS)
 {
 	CEventNode *task = new CEventNode(m, t, e, bFileSave, bSendACS);
 
@@ -28,7 +38,7 @@ int CEventManager::PushTask(eMessageType m, std::string t, eEventCode e, bool bF
 	if (!m_thread.joinable())
 	{
 		m_isThreadLoop = true;
-		m_thread = std::thread(CEventManager::ThreadFunction, this);
+		m_thread = thread(CEventManager::ThreadFunction, this);
 	}
 	m_cs.Unlock();
 	m_sema.Signal();
@@ -67,11 +77,13 @@ void CEventManager::Terminate()
 }
 void CEventManager::clearError()
 {
-	m_ErrorList = "";
+	m_ArrayList.clear();
+
+	/*
 	// wait all task finish
 	if (m_thread.joinable())
 	{
-		//PushTask(NULL); // finish thread
+		m_isThreadLoop = false;
 		if (m_thread.joinable())
 			m_thread.join();
 	}
@@ -84,6 +96,7 @@ void CEventManager::clearError()
 		delete m_tasks.front();
 		m_tasks.pop();
 	}
+	*/
 }
 int CEventManager::ThreadFunction(CEventManager *mng)
 {
@@ -93,10 +106,12 @@ int CEventManager::ThreadFunction(CEventManager *mng)
 		if (!task) // end thread command
 			break;
 		if (task->m_bFileSave)
-			WriteLog(task->m_MsgType, "%s: %s", task->m_eventTarget.c_str(), task->m_mEventCode[task->m_eventCode].c_str());
+			WriteLog(task->m_MsgType, "%s: %s", task->m_eventTarget.c_str(), mng->m_EventCodeTable[task->m_eventCode].c_str());
+		if (task->m_MsgType == MSG_ERROR)
+			mng->pushList(task);
 		delete task;
 	}
-	return 1;
+	return 0;
 }
 char* CEventManager::CStringToChar(CString& _strSource, char* _szResult, int _nSizeResult)
 {
@@ -160,4 +175,44 @@ void  CEventManager::WriteLog(int nLevel, char* pFormat, ...)
 	{
 		;
 	}
+}
+void CEventManager::clearError(string sensorName) {
+	for (int i = 0; i < m_ArrayList.size(); i++) {
+		if (m_ArrayList[i].size() == 0) continue;
+		if (strcmp(m_ArrayList[i][0].m_eventTarget.c_str(), sensorName.c_str()) == 0)
+			m_ArrayList[i].clear();
+	}
+}
+void CEventManager::pushList(CEventNode* input) {
+	int index = findNode(input);
+	CEventNode node(input->m_MsgType, input->m_eventTarget, input->m_eventCode);
+
+	if (m_ArrayList.size() == index) {
+		vector<CEventNode> list;
+		list.push_back(node);
+		m_ArrayList.push_back(list);
+	}
+	else {
+
+		for (int i = 0; i < m_ArrayList[index].size(); i++)
+			if (m_ArrayList[index][i].m_eventCode == node.m_eventCode)
+				return;
+		m_ArrayList[index].push_back(node);
+	}
+}
+int CEventManager::findNode(CEventNode*input) {
+	for (int i = 0; i < m_ArrayList.size(); i++) {
+		if (m_ArrayList[i].size() == 0) continue;
+		if (strcmp(m_ArrayList[i][0].m_eventTarget.c_str(), input->m_eventTarget.c_str()) == 0)
+			return i;
+	}
+	return m_ArrayList.size();
+}
+
+std::vector<std::vector<CEventNode>> CEventManager::getErrorArrayList() {
+	return m_ArrayList;
+}
+
+std::map<eEventCode, std::string> CEventManager::getEventCodeTable() {
+	return m_EventCodeTable;
 }
