@@ -54,6 +54,8 @@ END_MESSAGE_MAP()
 
 CModuleIntegrationTestDlg::CModuleIntegrationTestDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_MODULEINTEGRATIONTEST_DIALOG, pParent)
+	, m_radioLaser1UpsideDown(0)
+	, m_radioLaser2UpsideDown(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -89,6 +91,10 @@ BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
 	ON_WM_ERASEBKGND()
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BUTTON_LASER1_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Connect)
+	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_BUTTON_LASER2_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Connect)
+	ON_BN_CLICKED(IDC_BUTTON_LASER1_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Reset)
+	ON_BN_CLICKED(IDC_BUTTON_LASER2_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Reset)
 END_MESSAGE_MAP()
 
 
@@ -124,9 +130,11 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+	g_eventManager->PushTask(MSG_INFO, "", INFO_PROGRAM_START, true, false);
+
 	// LMS 2, Gyro 1, Cancard 1, Motion 1, ComizoaIO 1
 	m_sensor = new sensor::CSensorModule *[6];
-	m_sensor[0] = new CSICKLaserScanner("LMS_Front", LMS1xx, "192.168.0.1", 2111, false);
+	m_sensor[0] = new CSICKLaserScanner("LMS_Front", LMS1xx, "192.168.1.161", 2111, false);
 	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", LMS1xx, "192.168.0.1", 2111, false);
 
 	UpdateUI();
@@ -134,6 +142,15 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 	SetTimer(1, 100, NULL);
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
+}
+
+void CModuleIntegrationTestDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	//for (int i = 0; i < 8; i++)
+	delete m_sensor[0];
+	g_eventManager->PushTask(MSG_INFO, "", INFO_PROGRAM_TERMINATED, true, false);
 }
 
 void CModuleIntegrationTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -148,11 +165,6 @@ void CModuleIntegrationTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		CDialogEx::OnSysCommand(nID, lParam);
 	}
 }
-
-// 대화 상자에 최소화 단추를 추가할 경우 아이콘을 그리려면
-//  아래 코드가 필요합니다.  문서/뷰 모델을 사용하는 MFC 응용 프로그램의 경우에는
-//  프레임워크에서 이 작업을 자동으로 수행합니다.
-
 
 void CModuleIntegrationTestDlg::OnPaint()
 {
@@ -175,19 +187,16 @@ void CModuleIntegrationTestDlg::OnPaint()
 	}
 	else
 	{
-		DrawDoubleBuffering();
+		//DrawDoubleBuffering();
 		CDialogEx::OnPaint();
 	}
 }
 
 
-// 사용자가 최소화된 창을 끄는 동안에 커서가 표시되도록 시스템에서
-//  이 함수를 호출합니다.
 HCURSOR CModuleIntegrationTestDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
-
 
 
 void CModuleIntegrationTestDlg::DrawDoubleBuffering()
@@ -204,10 +213,12 @@ void CModuleIntegrationTestDlg::DrawDoubleBuffering()
 	bmp.CreateCompatibleBitmap(pDC, rect.Width(), rect.Height());
 	pOldBitmap = (CBitmap *)MemDC.SelectObject(&bmp);
 	MemDC.PatBlt(0, 0, rect.Width(), rect.Height(), WHITENESS);
+	MemDC.SelectObject(pOldBitmap);
+	//DrawImage(&MemDC);
 
 	pDC->BitBlt(0, 0, rect.Width(), rect.Height(), &MemDC, 0, 0, SRCCOPY);
 
-	MemDC.SelectObject(pOldBitmap);
+	//MemDC.SelectObject(pOldBitmap);
 	MemDC.DeleteDC();
 }
 
@@ -222,23 +233,10 @@ BOOL CModuleIntegrationTestDlg::OnEraseBkgnd(CDC* pDC)
 
 void CModuleIntegrationTestDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
 	if (nIDEvent == 1) {
 		// UI Update
-		switch (m_sensor[0]->getStatus()) {
-		case STATE_INIT:
-			m_editLaser1State.SetWindowTextW(_T("Init"));
-			break;
-		case STATE_PROGRESSING:
-			m_editLaser1State.SetWindowTextW(_T("Prog"));
-			break;
-		case STATE_RUN:
-			m_editLaser1State.SetWindowTextW(_T("Run"));
-			break;
-		case STATE_ERROR:
-			m_editLaser1State.SetWindowTextW(_T("Error"));
-			break;
-		}
+		UILaserScanDataUpdate(m_sensor[0], 0);
+		UILaserScanDataUpdate(m_sensor[1], 1);
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -293,7 +291,6 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_editLaser2End.SetWindowText(CA2T(std::to_string(lms->getEndAngle()).c_str()));
 
 	// List Update
-	((CButton*)GetDlgItem(IDC_RADIO_LASER1_UPSIDEDOWN))->SetCheck(lms->getUpsideDown());
 	for (int i = 0; i < m_listLaserScanData.GetItemCount(); i++) {
 		m_listLaserScanData.DeleteColumn(i);
 	}
@@ -311,5 +308,106 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 
 void CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Connect()
 {
+	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[0]);
+
+	// Get IP & Port
+	CString str[5];
+	m_editLaser1IP1.GetWindowTextW(str[0]);
+	m_editLaser1IP2.GetWindowTextW(str[1]);
+	m_editLaser1IP3.GetWindowTextW(str[2]);
+	m_editLaser1IP4.GetWindowTextW(str[3]);
+	m_editLaser1Port.GetWindowTextW(str[4]);
+
+	std::string ip;
+	unsigned int port;
+	for (int i = 0; i < 4; i++) {
+		ip.append((CStringA)str[i]);
+		if (i < 3) ip.append(".");
+	}
+	port = _ttoi(str[4]);
+
+	lms->setIP(ip);
+	lms->setPort(port);
+
 	m_sensor[0]->Connect();
+}
+
+
+void CModuleIntegrationTestDlg::UILaserScanDataUpdate(sensor::CSensorModule * input, int nIndex) {
+	switch (input->getStatus()) {
+	case STATE_INIT:
+		if(nIndex == 0)
+			m_editLaser1State.SetWindowTextW(_T("Init"));
+		else
+			m_editLaser2State.SetWindowTextW(_T("Init"));
+		break;
+	case STATE_PROGRESSING:
+		if (nIndex == 0)
+			m_editLaser1State.SetWindowTextW(_T("Prog"));
+		else
+			m_editLaser2State.SetWindowTextW(_T("Prog"));
+		break;
+	case STATE_RUN:
+		if (nIndex == 0)
+			m_editLaser1State.SetWindowTextW(_T("Run"));
+		else
+			m_editLaser2State.SetWindowTextW(_T("Run"));
+		break;
+	case STATE_ERROR:
+		if (nIndex == 0)
+			m_editLaser1State.SetWindowTextW(_T("Error"));
+		else
+			m_editLaser2State.SetWindowTextW(_T("Error"));
+		break;
+	}
+
+	// Print Data
+	if (input->getStatus() == STATE_RUN) {
+		CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(input);
+		lms->getData(&m_LaserData1);
+		int col = int(lms->getEndAngle() - lms->getStartAngle());
+		int step = lms->getResolDeg();
+		for (int i = 0; i < col; i++) {
+			long dist = m_LaserData1.dist[i*step];
+			m_listLaserScanData.SetItem(nIndex, i + 1, LVIF_TEXT, CA2CT(std::to_string(dist).c_str()), 0, 0, 0, NULL);
+		}
+	}
+}
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Connect()
+{
+	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[1]);
+
+	// Get IP & Port
+	CString str[5];
+	m_editLaser2IP1.GetWindowTextW(str[0]);
+	m_editLaser2IP2.GetWindowTextW(str[1]);
+	m_editLaser2IP3.GetWindowTextW(str[2]);
+	m_editLaser2IP4.GetWindowTextW(str[3]);
+	m_editLaser2Port.GetWindowTextW(str[4]);
+
+	std::string ip;
+	unsigned int port;
+	for (int i = 0; i < 4; i++) {
+		ip.append((CStringA)str[i]);
+		if (i < 3) ip.append(".");
+	}
+	port = _ttoi(str[4]);
+
+	lms->setIP(ip);
+	lms->setPort(port);
+
+	m_sensor[1]->Connect();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Reset()
+{
+	m_sensor[0]->Reset();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Reset()
+{
+	m_sensor[1]->Reset();
 }

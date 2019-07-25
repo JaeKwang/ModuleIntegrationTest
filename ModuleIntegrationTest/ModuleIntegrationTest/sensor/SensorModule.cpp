@@ -88,7 +88,7 @@ int CSensorModule::ThreadFunction_StateMachine(CSensorModule *sensor) {
 					}
 					else {
 						g_eventManager->PushTask(MSG_ERROR, sensor->getSensorName(), ERROR_RESET_FAILED, true, true);
-						sensor->m_eState = STATE_ERROR;
+						sensor->m_eState = STATE_INIT;
 					}
 				}
 				break;

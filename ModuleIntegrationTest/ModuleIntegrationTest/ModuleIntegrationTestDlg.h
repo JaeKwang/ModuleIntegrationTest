@@ -27,9 +27,10 @@ public:
 protected:
 	HICON m_hIcon;
 	sensor::CSensorModule ** m_sensor;
+	LaserScanData m_LaserData1;
 
 	void UpdateUI();
-
+	void UILaserScanDataUpdate(sensor::CSensorModule *, int);
 	// 생성된 메시지 맵 함수
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -60,4 +61,10 @@ public:
 	CEdit m_editLaser2Start;
 	CEdit m_editLaser2End;
 	afx_msg void OnBnClickedButtonLaser1Connect();
+	afx_msg void OnDestroy();
+	int m_radioLaser1UpsideDown;
+	int m_radioLaser2UpsideDown;
+	afx_msg void OnBnClickedButtonLaser2Connect();
+	afx_msg void OnBnClickedButtonLaser1Reset();
+	afx_msg void OnBnClickedButtonLaser2Reset();
 };
