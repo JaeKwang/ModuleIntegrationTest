@@ -34,3 +34,8 @@
 # visual studio
 *.db
 *.opendb
+*.ipch
+*.tlog
+*.lastbuildstate
+*.idb
+*.res
