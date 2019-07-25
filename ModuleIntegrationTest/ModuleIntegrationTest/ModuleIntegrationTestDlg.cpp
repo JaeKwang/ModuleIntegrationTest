@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 
 #include "sensor\SICKLaserScanner.h"
+#include "sensor\SICKGuide.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -87,6 +88,19 @@ void CModuleIntegrationTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_COMIZOA_STATE, m_editComizoaState);
 	DDX_Control(pDX, IDC_LIST_COMIZOA_DATA, m_listComizoaData);
 	DDX_Control(pDX, IDC_STATIC_COMIZOA_PIN_NAME, m_staticIOData);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE_NUM, m_editGuideDeviceNum);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE1_ID, m_editGuideDeviceID1);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE2_ID, m_editGuideDeviceID2);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE1_LEFT, m_editGuideDevice1Left);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE1_CENTOR, m_editGuideDevice1Centor);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE1_RIGHT, m_editGuideDevice1Right);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE1_MARKER, m_editGuideDevice1Marker);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE2_LEFT, m_editGuideDevice2Left);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE2_CENTOR, m_editGuideDevice2Centor);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE2_RIGHT, m_editGuideDevice2Right);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_DEVICE2_MARKER, m_editGuideDevice2Marker);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_STATE, m_editGuideState);
+	DDX_Control(pDX, IDC_EDIT_GUIDE_PORT, m_editGuidePort);
 }
 
 BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
@@ -103,6 +117,8 @@ BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
 	ON_NOTIFY(NM_CLICK, IDC_LIST_COMIZOA_DATA, &CModuleIntegrationTestDlg::OnLvnItemchangedListComizoaData)
 	ON_BN_CLICKED(IDC_BUTTON_COMIZOA_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonComizoaConnect)
 	ON_BN_CLICKED(IDC_BUTTON_COMIZOA_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonComizoaReset)
+	ON_BN_CLICKED(IDC_BUTTON_GUIDE_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonGuideConnect)
+	ON_BN_CLICKED(IDC_BUTTON_GUIDE_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonGuideReset)
 END_MESSAGE_MAP()
 
 
@@ -141,11 +157,15 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 	g_eventManager->PushTask(MSG_INFO, "", INFO_PROGRAM_START, true, false);
 
 	// LMS 2, Gyro 1, Cancard 1, Motion 1, ComizoaIO 1
-	m_sensor = new CSensorModule *[6];
+	m_sensor = new CSensorModule *[5];
 	m_sensor[0] = new CSICKLaserScanner("LMS_Front", LMS1xx, "192.168.1.161", 2111, false);
 	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", LMS1xx, "192.168.0.1", 2111, false);
-	m_IOHub = new CIOHub("./inifiles/SAMSUNG_AMR_IO_List.ini");
+	m_sensor[2] = new CSICKGuide("Sensor1", 3, 125, 100, 2);
+	((CSICKGuide*)m_sensor[2])->setDeviceID(0, 0x18a);
+	((CSICKGuide*)m_sensor[2])->setDeviceID(1, 0x18b);
 
+	m_IOHub = new CIOHub("./inifiles/SAMSUNG_AMR_IO_List.ini");
+	
 	UpdateUI();
 
 	SetTimer(1, 100, NULL);
@@ -247,9 +267,11 @@ void CModuleIntegrationTestDlg::OnTimer(UINT_PTR nIDEvent)
 		UILaserScanDataUpdate(m_sensor[0], 0);
 		UILaserScanDataUpdate(m_sensor[1], 1);
 		UIComizoaDataUpdate();
+		UIGuideDataUpdate();
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
+
 
 void CModuleIntegrationTestDlg::UpdateUI() {
 	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[0]);
@@ -275,7 +297,7 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_editLaser1Res.SetWindowText(CA2T(std::to_string(lms->getAngleResolution()).c_str()));
 	m_editLaser1Start.SetWindowText(CA2T(std::to_string(lms->getStartAngle()).c_str()));
 	m_editLaser1End.SetWindowText(CA2T(std::to_string(lms->getEndAngle()).c_str()));
-	
+
 	lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[1]);
 	IP = lms->getIP();
 	delimiter = ".";
@@ -315,6 +337,12 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_listLaserScanData.InsertItem(0, _T("Front"));
 	m_listLaserScanData.InsertItem(1, _T("Rear"));
 
+	int step = lms->getResolDeg();
+	for (int i = 0; i < col; i++) {
+		m_listLaserScanData.SetItem(0, i + 1, LVIF_TEXT, _T("-"), 0, 0, 0, NULL);
+		m_listLaserScanData.SetItem(1, i + 1, LVIF_TEXT, _T("-"), 0, 0, 0, NULL);
+	}
+
 	// Comizoa UI
 	//UI Update
 	m_editComizoaID.SetWindowText(CA2T(std::to_string(m_IOHub->getComizoaID()).c_str()));
@@ -348,7 +376,23 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 		if (errorCode == RETURN_NON_ERROR)
 			m_listComizoaData.SetItemText(out[i].nPinBase + out[i].nPinPosition, out[i].nDIONumber + 1, _T("-"));
 	}
+
+	// Guide Sensor
+	CSICKGuide* s = dynamic_cast<CSICKGuide*>(m_sensor[2]);
+	m_editGuideDeviceNum.SetWindowText(CA2T(std::to_string(s->getDeviceNum()).c_str()));
+	m_editGuideDeviceID1.SetWindowText(CA2T(std::to_string(s->getDeviceID(0)).c_str()));
+	m_editGuideDeviceID2.SetWindowText(CA2T(std::to_string(s->getDeviceID(1)).c_str()));
+	m_editGuidePort.SetWindowText(CA2T(std::to_string(s->getPort()).c_str()));
+	m_editGuideDevice1Left.SetWindowText(_T("-"));
+	m_editGuideDevice1Centor.SetWindowText(_T("-"));
+	m_editGuideDevice1Right.SetWindowText(_T("-"));
+	m_editGuideDevice1Marker.SetWindowText(_T("-"));
+	m_editGuideDevice2Left.SetWindowText(_T("-"));
+	m_editGuideDevice2Centor.SetWindowText(_T("-"));
+	m_editGuideDevice2Right.SetWindowText(_T("-"));
+	m_editGuideDevice2Marker.SetWindowText(_T("-"));
 }
+
 
 void CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Connect()
 {
@@ -418,6 +462,7 @@ void CModuleIntegrationTestDlg::UILaserScanDataUpdate(sensor::CSensorModule * in
 	}
 }
 
+
 void CModuleIntegrationTestDlg::UIComizoaDataUpdate() {
 	switch (m_IOHub->getStatus()) {
 	case STATE_INIT:
@@ -462,6 +507,42 @@ void CModuleIntegrationTestDlg::UIComizoaDataUpdate() {
 		}
 	}
 }
+
+
+void CModuleIntegrationTestDlg::UIGuideDataUpdate() {
+	switch (m_sensor[2]->getStatus()) {
+	case STATE_INIT:
+		m_editGuideState.SetWindowTextW(_T("Init"));
+		break;
+	case STATE_PROGRESSING:
+		m_editGuideState.SetWindowTextW(_T("Prog"));
+		break;
+	case STATE_RUN:
+		m_editGuideState.SetWindowTextW(_T("Run"));
+		break;
+	case STATE_ERROR:
+		m_editGuideState.SetWindowTextW(_T("Error"));
+		break;
+	}
+
+	if (m_sensor[2]->getStatus() == STATE_RUN) {
+		short* a = ((CSICKGuide *)m_sensor[2])->getFrontData();
+		short* b = ((CSICKGuide *)m_sensor[2])->getRearData();
+		short markerF = ((CSICKGuide *)m_sensor[2])->getFrontMarker();
+		short markerR = ((CSICKGuide *)m_sensor[2])->getRearMarker();
+
+		m_editGuideDevice1Left.SetWindowText(CA2T(std::to_string(a[0]).c_str()));
+		m_editGuideDevice1Centor.SetWindowText(CA2T(std::to_string(a[1]).c_str()));
+		m_editGuideDevice1Right.SetWindowText(CA2T(std::to_string(a[2]).c_str()));
+		m_editGuideDevice1Marker.SetWindowText(CA2T(std::to_string(markerF).c_str()));
+
+		m_editGuideDevice2Left.SetWindowText(CA2T(std::to_string(b[0]).c_str()));
+		m_editGuideDevice2Centor.SetWindowText(CA2T(std::to_string(b[1]).c_str()));
+		m_editGuideDevice2Right.SetWindowText(CA2T(std::to_string(b[2]).c_str()));
+		m_editGuideDevice2Marker.SetWindowText(CA2T(std::to_string(markerR).c_str()));
+	}
+}
+
 
 void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Connect()
 {
@@ -538,4 +619,20 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonComizoaConnect()
 void CModuleIntegrationTestDlg::OnBnClickedButtonComizoaReset()
 {
 	m_IOHub->Reset();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonGuideConnect()
+{
+	CSICKGuide* s = dynamic_cast<CSICKGuide*>(m_sensor[2]);
+	CString str;
+	m_editGuidePort.GetWindowTextW(str);
+	s->setPort(_ttoi(str));
+	m_sensor[2]->Connect();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonGuideReset()
+{
+	m_sensor[2]->Reset();
 }

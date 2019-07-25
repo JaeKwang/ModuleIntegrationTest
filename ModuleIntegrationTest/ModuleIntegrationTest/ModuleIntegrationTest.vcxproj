@@ -199,6 +199,7 @@
     <ClInclude Include="sensor\IOHub.h" />
     <ClInclude Include="sensor\SensorData.h" />
     <ClInclude Include="sensor\SensorModule.h" />
+    <ClInclude Include="sensor\SICKGuide.h" />
     <ClInclude Include="sensor\SICKLaserScanner.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -217,6 +218,7 @@
     <ClCompile Include="sensor\driver\ceSDK.cpp" />
     <ClCompile Include="sensor\IOHub.cpp" />
     <ClCompile Include="sensor\SensorModule.cpp" />
+    <ClCompile Include="sensor\SICKGuide.cpp" />
     <ClCompile Include="sensor\SICKLaserScanner.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

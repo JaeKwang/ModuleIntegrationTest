@@ -111,6 +111,9 @@
     <ClInclude Include="robot\IOList.h">
       <Filter>헤더 파일\robot</Filter>
     </ClInclude>
+    <ClInclude Include="sensor\SICKGuide.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModuleIntegrationTest.cpp">
@@ -151,6 +154,9 @@
     </ClCompile>
     <ClCompile Include="sensor\driver\ceSDK.cpp">
       <Filter>소스 파일\sensor\driver</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\SICKGuide.cpp">
+      <Filter>소스 파일\sensor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

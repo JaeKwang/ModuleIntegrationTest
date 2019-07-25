@@ -34,6 +34,7 @@ protected:
 	void UpdateUI();
 	void UILaserScanDataUpdate(sensor::CSensorModule *, int);
 	void UIComizoaDataUpdate();
+	void UIGuideDataUpdate();
 	// 생성된 메시지 맵 함수
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -77,4 +78,19 @@ public:
 	CStatic m_staticIOData;
 	afx_msg void OnBnClickedButtonComizoaConnect();
 	afx_msg void OnBnClickedButtonComizoaReset();
+	CEdit m_editGuideDeviceNum;
+	CEdit m_editGuideDeviceID1;
+	CEdit m_editGuideDeviceID2;
+	CEdit m_editGuideDevice1Left;
+	CEdit m_editGuideDevice1Centor;
+	CEdit m_editGuideDevice1Right;
+	CEdit m_editGuideDevice1Marker;
+	CEdit m_editGuideDevice2Left;
+	CEdit m_editGuideDevice2Centor;
+	CEdit m_editGuideDevice2Right;
+	CEdit m_editGuideDevice2Marker;
+	CEdit m_editGuideState;
+	afx_msg void OnBnClickedButtonGuideConnect();
+	afx_msg void OnBnClickedButtonGuideReset();
+	CEdit m_editGuidePort;
 };
