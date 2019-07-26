@@ -54,13 +54,14 @@ int CComizoaIO::initialization() {
 	}
 	return RETURN_NON_ERROR;
 }
-CComizoaIO::~CComizoaIO() 
+CComizoaIO::~CComizoaIO()
 {
-	DisconnectAct();
+	Disconnect();
 	if (m_bInitialized)
 		ceUnloadDll();
+	while (getStatus() != STATE_INIT);
 }
-int CComizoaIO::ConnectAct() 
+int CComizoaIO::ConnectAct()
 {
 	if (!m_bInitialized) {
 		if (initialization() == RETURN_NON_ERROR)
@@ -98,7 +99,7 @@ int CComizoaIO::ConnectAct()
 
 	// NODE_ID가 안맞으면 여기서 프로그램이 뻗음 (Comizoa SDK에서 예외처리가 안되어있음)
 	long nMotModuleCnt, nDioModuleCnt, nAiModuleCnt, nAoModuleCnt, nCountModuleCnt;
-	 // 해당 원격 노드에 대해 탐색된 모션 제어 축 개수를 반환합니다.
+	// 해당 원격 노드에 대해 탐색된 모션 제어 축 개수를 반환합니다.
 	ceGnModuleCount_Motion(m_lNodeID, &nMotModuleCnt);
 	// 해당 원격 노드에 대해 탐색된 DIO 모듈 개수를 반환합니다.
 	ceGnModuleCount_Dio(m_lNodeID, &nDioModuleCnt);
@@ -146,7 +147,7 @@ int CComizoaIO::ConnectAct()
 
 	// IO 카드 리셋
 	ceGnResetNode(m_lNodeID, CE_RESET_ALL);
-	
+
 	// Input Output pin 세팅
 	long lState;
 	cedioMulti_Get(0, 8, &lState);
@@ -162,7 +163,7 @@ int CComizoaIO::ConnectAct()
 				return RETURN_FAILED;
 			}
 		}
-		long data = (0x1 << m_DIOModule[i].nDONumber) -1;
+		long data = (0x1 << m_DIOModule[i].nDONumber) - 1;
 		if (m_DIOModule[i].nDONumber == 32) data = 0xFFFFFFFF;
 		if (cedioModeMulti_Set(m_DIOModule[i].nDOStart, m_DIOModule[i].nDONumber, data) == ceERR_NONE)
 		{
@@ -176,7 +177,7 @@ int CComizoaIO::ConnectAct()
 	}
 	return RETURN_NON_ERROR;
 }
-int CComizoaIO::DisconnectAct() 
+int CComizoaIO::DisconnectAct()
 {
 	if (!m_bInitialized)
 		return RETURN_FAILED;
@@ -184,7 +185,7 @@ int CComizoaIO::DisconnectAct()
 	ceGnUnload();
 	return RETURN_NON_ERROR;
 }
-int CComizoaIO::ResetAct() 
+int CComizoaIO::ResetAct()
 {
 	if (!m_bInitialized)
 		return RETURN_FAILED;
@@ -204,14 +205,14 @@ int CComizoaIO::ResetAct()
 	ceGnResetNode(1, CE_RESET_ALL);
 	return ConnectAct();
 }
-int CComizoaIO::UpdateData() 
+int CComizoaIO::UpdateData()
 {
-	long nIsActive; 
+	long nIsActive;
 	ceGnNodeIsActive(m_lNodeID, &nIsActive);
 	// 통신 연결 상태 체크
 	if (nIsActive == CE_FALSE)
 		return RETURN_FAILED;
-	
+
 	long a = 0;
 	cedioMulti_Get(0, 16, &a);
 	int index = 0;
@@ -221,7 +222,7 @@ int CComizoaIO::UpdateData()
 		if (cedioMulti_Put(index, m_DIOModule[i].nPinNum, m_WriteData[i]) != ceERR_NONE)
 			return RETURN_FAILED;
 		index += m_DIOModule[i].nPinNum;
-	}	
+	}
 	return RETURN_NON_ERROR;
 }
 
@@ -230,7 +231,7 @@ int CComizoaIO::bitSet(int moduleNum, int pin, bool value) {
 		return RETURN_FAILED;
 	int errorCode;
 	if (value != bitRead(moduleNum, pin, &errorCode)) {
-		if(value)
+		if (value)
 			m_WriteData[moduleNum] = m_WriteData[moduleNum] + (0x01 << pin);
 		else
 			m_WriteData[moduleNum] = m_WriteData[moduleNum] - (0x01 << pin);

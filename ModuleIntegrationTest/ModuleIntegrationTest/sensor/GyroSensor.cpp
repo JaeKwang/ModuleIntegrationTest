@@ -11,21 +11,20 @@ using namespace std;
 CGyroSensor::CGyroSensor(string sensorName, int port, int DRate) :CSensorModule(sensorName)
 {
 	setSensorName(sensorName);
-	SetPort(port);
-	SetBaudrate(DRate);
+	setPort(port);
+	setBaudrate(DRate);
 	Initialize();
 }
 
 CGyroSensor::~CGyroSensor()
 {
-	m_bTerminated = true;
-	TerminateAct();
+	Disconnect();
+	while (getStatus() != STATE_INIT);
 }
 
 bool CGyroSensor::Initialize()
 {
 	m_dData = 0.;
-	m_bTerminated = false;
 	m_bValueInitialized = false;
 
 	m_dRefData = 0.;
@@ -63,6 +62,18 @@ int CGyroSensor::ConnectAct()
 	m_Serial->m_bStartFlag = TRUE;
 
 	return RETURN_NON_ERROR;
+}
+
+int CGyroSensor::DisconnectAct()
+{
+	int iRes = 0;
+	BOOL bResult = FALSE;
+	if (m_Serial->hComm != NULL)
+	{
+		bResult = m_Serial->DestroyComm();
+	}
+	iRes = bResult ? 0 : 1;
+	return iRes;
 }
 
 int CGyroSensor::SerialInitialize()
@@ -229,24 +240,19 @@ int CGyroSensor::UpdateData()
 	dwEvtMask = 0;									// Variable for created EVENT
 	WaitCommEvent(m_Serial->hComm, &dwEvtMask, NULL);	// waiting for EVENT occur
 	if ((dwEvtMask & EV_RXCHAR) == EV_RXCHAR) {	// if EV_RXCHAR EVENT occurs
-		do {
-			memset(InData, 0, MAXBLOCK); // Initialize the array InData to 0
-
-			if (nLength = m_Serial->ReadCommBlock((LPSTR)InData, MAXBLOCK)) {	//Check the buffer has any data
-																				/*for(int i=0; i<8;i++){
-																				printf("i=%x\n",InData[i]);
-																				}*/
-				m_Serial->SetReadData(InData, nLength);		// Receive data
-				OnReceiveData();
-				Wait(50);
-			}
-		} while (nLength>0);
+		memset(InData, 0, MAXBLOCK); // Initialize the array InData to 0
+		nLength = m_Serial->ReadCommBlock((LPSTR)InData, MAXBLOCK);
+		if (nLength == 0)
+			return RETURN_FAILED;
+		else {
+			m_Serial->SetReadData(InData, nLength);		// Receive data
+			// 프로토콜 체크
+			// return RETURN_DATA_CHECK_FAILED;
+			OnReceiveData();
+		}
 	}
 	else
-	{
 		return RETURN_FAILED;
-	}
-	//		Wait(50);
 
 	return RETURN_NON_ERROR;
 }
@@ -313,54 +319,6 @@ void CGyroSensor::ResetThetaDegTo(double dTargetDeg)
 	if (m_dRefData < -180.0)	m_dRefData += 360.0;
 }
 
-int CGyroSensor::DisconnectAct()
-{
-	int iRes = 0;
-	BOOL bResult = FALSE;
-	if (m_Serial->hComm != NULL)
-	{
-		bResult = m_Serial->DestroyComm();
-	}
-	iRes = bResult ? 0 : 1;
-	return iRes;
-}
-
-int	CGyroSensor::TerminateAct()
-{
-	if (!DisconnectAct())
-	{
-		return 0;
-	}
-	if (m_Serial != NULL)
-	{
-		delete m_Serial;
-		m_Serial = NULL;
-	}
-
-	return RETURN_NON_ERROR;
-}
-
-void CGyroSensor::ErrorClear()
-{
-	//m_evtMng->clearError();
-}
-
-int CGyroSensor::ReconnectAct()
-{
-	// Com Port Close 시간이 충분히 주어져야 함(1500msec 이상)
-
-	if (DisconnectAct() != 0) {
-		return 1;
-	}
-	m_Serial->clearport();
-	if (ConnectAct() != 0)
-	{
-		return RETURN_FAILED;
-	}
-
-	return RETURN_NON_ERROR;
-}
-
 int CGyroSensor::ResetAct()
 {
 	char * senddata;
@@ -379,7 +337,7 @@ int CGyroSensor::ResetAct()
 	return RETURN_NON_ERROR;
 }
 
-int CGyroSensor::SetConnectionTimeout(int nTimeout)
+int CGyroSensor::setConnectionTimeout(int nTimeout)
 {
 	if (nTimeout < 0 || nTimeout > MAX_TIMEOUT)
 	{
@@ -390,7 +348,7 @@ int CGyroSensor::SetConnectionTimeout(int nTimeout)
 	return RETURN_NON_ERROR;
 }
 
-int CGyroSensor::SetReconnectionCount(int iCount)
+int CGyroSensor::setReconnectionCount(int iCount)
 {
 	if (iCount < 0 || iCount > MAX_RECONNECT_COUNT)
 	{
@@ -401,7 +359,7 @@ int CGyroSensor::SetReconnectionCount(int iCount)
 	return RETURN_NON_ERROR;
 }
 
-int CGyroSensor::SetDataTimeout(int nTimeout) {
+int CGyroSensor::setDataTimeout(int nTimeout) {
 	if (nTimeout < 0 || MAX_TIMEOUT)
 	{
 		g_eventManager->PushTask(MSG_WARN, getSensorName(), WARN_INVALID_DATA_TIMEOUT, true, false);
@@ -412,7 +370,7 @@ int CGyroSensor::SetDataTimeout(int nTimeout) {
 	return RETURN_NON_ERROR;
 }
 
-int CGyroSensor::SetPort(int nPort) {
+int CGyroSensor::setPort(int nPort) {
 	if (nPort < 0 || nPort > 65555)
 	{
 		g_eventManager->PushTask(MSG_ERROR, getSensorName(), WARN_INVALID_PORTNO, true, true);
@@ -422,7 +380,7 @@ int CGyroSensor::SetPort(int nPort) {
 	return RETURN_NON_ERROR;
 }
 
-int CGyroSensor::SetBaudrate(int nRate) {
+int CGyroSensor::setBaudrate(int nRate) {
 	if (nRate < 0)
 	{
 		g_eventManager->PushTask(MSG_ERROR, getSensorName(), WARN_INVALID_BAUDRATE, true, true);

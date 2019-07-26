@@ -35,7 +35,7 @@ namespace sensor {
 																 // Thread °ü·Ã ¸â¹ö
 		int m_nThreadPeriod;
 		int m_nDataCheckCount;
-
+		int m_nTerminateTimeout;
 	protected:
 		std::string m_strSensorName;
 

@@ -31,7 +31,7 @@ namespace sensor
 		CSerialComm *m_Serial;
 
 		unsigned char rxbuf_for_GYRO[MAXBLOCK];
-
+		bool m_bValueInitialized;
 		int start_index;
 		int end_index;
 		int count_index;
@@ -43,42 +43,36 @@ namespace sensor
 		int m_iReconnectionCount;
 		int m_iDataTimeout;
 		int m_nBaudrate;
-		bool m_bTerminated;
-
-		bool m_bValueInitialized;
-		//double m_dAngle;
-
-	public:
-		//iAxis - 0: Yaw, 1: Pitch, 2:Roll
-		int getThetaDeg(eAxisType eAxis, double* dData);
-		int getDeltaThetaDeg(double dData);
-
-		int GetPort() { return m_iport; }
-		int GetBaudrate() { return m_nBaudrate; }
-		int GetConnectionTimeout() { return m_iConnectionTimeout; }
-		int GetReconnectionCount() { return m_iReconnectionCount; }
-		int GetDataTimeout() { return m_iDataTimeout; }
 
 		void ResetThetaDegTo(double dTargetDeg);
 		bool Initialize();
-		int ConnectAct();
-
 		int OnReceiveData();
-		int UpdateData();
 
+	public:
+		
 		CGyroSensor(string sensorName, int port, int nRate);
 		virtual ~CGyroSensor();
 		int SerialInitialize();
-		int DisconnectAct();
-		int TerminateAct();
-		void ErrorClear();
-		int ReconnectAct();
-		int ResetAct();
-		int SetPort(int iPort);
-		int SetBaudrate(int DRate);
+
+		int ConnectAct() override;
+		int ResetAct() override;
+		int UpdateData() override;
+		int DisconnectAct() override;
+
+		// Getter & Setter
+		int setPort(int iPort);
+		int setBaudrate(int DRate);
+		int setConnectionTimeout(int nTimeout);
+		int setReconnectionCount(int iCount);
+		int setDataTimeout(int nTimeout);
+
 		int getData(double* dDataYaw, double* dDataPitch, double* dDataRoll);
-		int SetConnectionTimeout(int nTimeout);
-		int SetReconnectionCount(int iCount);
-		int SetDataTimeout(int nTimeout);
+		int getThetaDeg(eAxisType eAxis, double* dData);
+		int getDeltaThetaDeg(double dData);
+		int getPort() { return m_iport; }
+		int getBaudrate() { return m_nBaudrate; }
+		int getConnectionTimeout() { return m_iConnectionTimeout; }
+		int getReconnectionCount() { return m_iReconnectionCount; }
+		int getDataTimeout() { return m_iDataTimeout; }
 	};
 }

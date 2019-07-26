@@ -109,6 +109,8 @@ void CModuleIntegrationTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_GYRO_ROLL, m_editGyroRoll);
 	DDX_Control(pDX, IDC_EDIT_GYRO_STATE, m_editGyroState);
 	DDX_Control(pDX, IDC_LIST3, m_listEventManager);
+	DDX_Control(pDX, IDC_CHECK_LASER2_UPSIDEDOWN, m_checkLaser2UpsideDown);
+	DDX_Control(pDX, IDC_CHECK_LASER1_UPSIDEDOWN, m_checkLaser1UpsideDown);
 }
 
 BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
@@ -131,6 +133,10 @@ BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_GYRO_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonGyroReset)
 	ON_BN_CLICKED(IDC_BUTTON_ERRORCLEAR, &CModuleIntegrationTestDlg::OnBnClickedButtonErrorclear)
 	ON_BN_CLICKED(IDCANCEL, &CModuleIntegrationTestDlg::OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_BUTTON_LASER1_CANCEL, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Cancel)
+	ON_BN_CLICKED(IDC_BUTTON_LASER2_CANCEL, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Cancel)
+	ON_BN_CLICKED(IDC_BUTTON_LASER1_APPLY, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Apply)
+	ON_BN_CLICKED(IDC_BUTTON_LASER2_APPLY, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Apply)
 END_MESSAGE_MAP()
 
 
@@ -313,7 +319,8 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_editLaser1Res.SetWindowText(CA2T(std::to_string(lms->getAngleResolution()).c_str()));
 	m_editLaser1Start.SetWindowText(CA2T(std::to_string(lms->getStartAngle()).c_str()));
 	m_editLaser1End.SetWindowText(CA2T(std::to_string(lms->getEndAngle()).c_str()));
-
+	m_checkLaser1UpsideDown.SetCheck(lms->getUpsideDown());
+	
 	lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[1]);
 	IP = lms->getIP();
 	delimiter = ".";
@@ -337,6 +344,7 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_editLaser2Res.SetWindowText(CA2T(std::to_string(lms->getAngleResolution()).c_str()));
 	m_editLaser2Start.SetWindowText(CA2T(std::to_string(lms->getStartAngle()).c_str()));
 	m_editLaser2End.SetWindowText(CA2T(std::to_string(lms->getEndAngle()).c_str()));
+	m_checkLaser2UpsideDown.SetCheck(lms->getUpsideDown());
 
 	// List Update
 	for (int i = 0; i < m_listLaserScanData.GetItemCount(); i++) {
@@ -353,7 +361,7 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_listLaserScanData.InsertItem(0, _T("Front"));
 	m_listLaserScanData.InsertItem(1, _T("Rear"));
 
-	int step = lms->getResolDeg();
+	int step = lms->getAngleResolution();
 	for (int i = 0; i < col; i++) {
 		m_listLaserScanData.SetItem(0, i + 1, LVIF_TEXT, _T("-"), 0, 0, 0, NULL);
 		m_listLaserScanData.SetItem(1, i + 1, LVIF_TEXT, _T("-"), 0, 0, 0, NULL);
@@ -410,8 +418,8 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 
 	// Gyro Sensor
 	CGyroSensor* gyro = dynamic_cast<CGyroSensor*>(m_sensor[3]);
-	m_editGyroPort.SetWindowText(CA2T(std::to_string(gyro->GetPort()).c_str()));
-	m_editGyroBaudrate.SetWindowText(CA2T(std::to_string(gyro->GetBaudrate()).c_str()));
+	m_editGyroPort.SetWindowText(CA2T(std::to_string(gyro->getPort()).c_str()));
+	m_editGyroBaudrate.SetWindowText(CA2T(std::to_string(gyro->getBaudrate()).c_str()));
 	m_editGyroYaw.SetWindowText(_T("-"));
 	m_editGyroPitch.SetWindowText(_T("-"));
 	m_editGyroRoll.SetWindowText(_T("-"));
@@ -478,7 +486,7 @@ void CModuleIntegrationTestDlg::UILaserScanDataUpdate(sensor::CSensorModule * in
 		CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(input);
 		lms->getData(&m_LaserData1);
 		int col = int(lms->getEndAngle() - lms->getStartAngle());
-		int step = lms->getResolDeg();
+		int step = lms->getAngleResolution();
 		for (int i = 0; i < col; i++) {
 			long dist = m_LaserData1.dist[i*step];
 			m_listLaserScanData.SetItem(nIndex, i + 1, LVIF_TEXT, CA2CT(std::to_string(dist).c_str()), 0, 0, 0, NULL);
@@ -707,9 +715,9 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonGyroConnect()
 	CGyroSensor* s = dynamic_cast<CGyroSensor*>(m_sensor[3]);
 	CString str;
 	m_editGyroPort.GetWindowTextW(str);
-	s->SetPort(_ttoi(str));
+	s->setPort(_ttoi(str));
 	m_editGyroBaudrate.GetWindowTextW(str);
-	s->SetBaudrate(_ttoi(str));
+	s->setBaudrate(_ttoi(str));
 	m_sensor[3]->Connect();
 }
 
@@ -730,4 +738,137 @@ void CModuleIntegrationTestDlg::OnBnClickedCancel()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	CDialogEx::OnCancel();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Cancel()
+{
+	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[0]);
+	std::string IP = lms->getIP();
+	std::string delimiter = ".";
+	std::string token = IP.substr(0, IP.find(delimiter));
+
+	// IP Address Update
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser1IP1.SetWindowText(CA2T(token.c_str()));
+	token = IP.substr(0, IP.find(delimiter));
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser1IP2.SetWindowText(CA2T(token.c_str()));
+	token = IP.substr(0, IP.find(delimiter));
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser1IP3.SetWindowText(CA2T(token.c_str()));
+	token = IP.substr(0, IP.find(delimiter));
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser1IP4.SetWindowText(CA2T(token.c_str()));
+	m_editLaser1Port.SetWindowText(CA2T(std::to_string(lms->getPort()).c_str()));
+
+	// Parameters Update
+	m_editLaser1Res.SetWindowText(CA2T(std::to_string(lms->getAngleResolution()).c_str()));
+	m_editLaser1Start.SetWindowText(CA2T(std::to_string(lms->getStartAngle()).c_str()));
+	m_editLaser1End.SetWindowText(CA2T(std::to_string(lms->getEndAngle()).c_str()));
+	m_checkLaser1UpsideDown.SetCheck(lms->getUpsideDown());
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Apply()
+{
+	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[0]);
+
+	// Get IP & Port
+	CString str[5];
+	m_editLaser1IP1.GetWindowTextW(str[0]);
+	m_editLaser1IP2.GetWindowTextW(str[1]);
+	m_editLaser1IP3.GetWindowTextW(str[2]);
+	m_editLaser1IP4.GetWindowTextW(str[3]);
+	m_editLaser1Port.GetWindowTextW(str[4]);
+
+	std::string ip;
+	unsigned int port;
+	for (int i = 0; i < 4; i++) {
+		ip.append((CStringA)str[i]);
+		if (i < 3) ip.append(".");
+	}
+	port = _ttoi(str[4]);
+
+	lms->setIP(ip);
+	lms->setPort(port);
+
+	CString s;
+	m_editLaser1Res.GetWindowTextW(s);
+	lms->setAngleResolution(_ttoi(s));
+	m_editLaser1Start.GetWindowTextW(s);
+	lms->setStartAngle(_ttoi(s));
+	m_editLaser1End.GetWindowTextW(s);
+	lms->setEndAngle(_ttoi(s));
+	lms->setUpsideDown(m_checkLaser1UpsideDown.GetCheck());
+
+	UpdateUI();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Cancel()
+{
+
+	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[1]);
+	std::string IP = lms->getIP();
+	std::string delimiter = ".";
+	std::string token = IP.substr(0, IP.find(delimiter));
+
+	// IP Address Update
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser2IP1.SetWindowText(CA2T(token.c_str()));
+	token = IP.substr(0, IP.find(delimiter));
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser2IP2.SetWindowText(CA2T(token.c_str()));
+	token = IP.substr(0, IP.find(delimiter));
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser2IP3.SetWindowText(CA2T(token.c_str()));
+	token = IP.substr(0, IP.find(delimiter));
+	IP = IP.substr(IP.find(delimiter) + 1, IP.size());
+	m_editLaser2IP4.SetWindowText(CA2T(token.c_str()));
+	m_editLaser2Port.SetWindowText(CA2T(std::to_string(lms->getPort()).c_str()));
+
+	// Parameters Update
+	m_editLaser2Res.SetWindowText(CA2T(std::to_string(lms->getAngleResolution()).c_str()));
+	m_editLaser2Start.SetWindowText(CA2T(std::to_string(lms->getStartAngle()).c_str()));
+	m_editLaser2End.SetWindowText(CA2T(std::to_string(lms->getEndAngle()).c_str()));
+	m_checkLaser2UpsideDown.SetCheck(lms->getUpsideDown());
+	lms->setUpsideDown(m_checkLaser2UpsideDown.GetCheck());
+}
+
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Apply()
+{
+	CSICKLaserScanner* lms = dynamic_cast<CSICKLaserScanner*>(m_sensor[1]);
+
+	// Get IP & Port
+	CString str[5];
+	m_editLaser1IP1.GetWindowTextW(str[0]);
+	m_editLaser1IP2.GetWindowTextW(str[1]);
+	m_editLaser1IP3.GetWindowTextW(str[2]);
+	m_editLaser1IP4.GetWindowTextW(str[3]);
+	m_editLaser1Port.GetWindowTextW(str[4]);
+
+	std::string ip;
+	unsigned int port;
+	for (int i = 0; i < 4; i++) {
+		ip.append((CStringA)str[i]);
+		if (i < 3) ip.append(".");
+	}
+	port = _ttoi(str[4]);
+
+	lms->setIP(ip);
+	lms->setPort(port);
+
+	CString s;
+	m_editLaser2Res.GetWindowTextW(s);
+	lms->setAngleResolution(_ttoi(s));
+	m_editLaser2Start.GetWindowTextW(s);
+	lms->setStartAngle(_ttoi(s));
+	m_editLaser2End.GetWindowTextW(s);
+	lms->setEndAngle(_ttoi(s));
+	lms->setUpsideDown(m_checkLaser2UpsideDown.GetCheck());
+
+	UpdateUI();
 }

@@ -25,13 +25,13 @@ CSICKLaserScanner::CSICKLaserScanner(string sensorName, eSICKLaserScannerModel m
 	switch (m_eModel) {
 	case eSICKLaserScannerModel::LMS1xx:
 		m_nFreqency = 25;
-		m_dAngleResolution = 0.2500;
+		m_nAngleResolution = 4;
 		m_nStartAngle = -45;
 		m_nEndAngle = 225;
 		break;
 	case eSICKLaserScannerModel::TiMxxx:
 		m_nFreqency = 15;
-		m_dAngleResolution = 0.3333;
+		m_nAngleResolution = 3;
 		m_nStartAngle = -45;
 		m_nEndAngle = 225;
 		break;
@@ -46,7 +46,9 @@ CSICKLaserScanner::CSICKLaserScanner(string sensorName, eSICKLaserScannerModel m
 }
 
 CSICKLaserScanner::~CSICKLaserScanner() {
-	m_client->Close();
+	Disconnect();
+	delete m_client;
+	while (getStatus() != STATE_INIT);
 }
 int CSICKLaserScanner::ConnectAct() {
 	// Communication specification
@@ -119,11 +121,10 @@ int CSICKLaserScanner::getData(LaserScanData * scandata) {
 }
 int CSICKLaserScanner::getModel() { return m_eModel; }
 int CSICKLaserScanner::getFreqency() { return m_nFreqency; }
-double CSICKLaserScanner::getAngleResolution() { return m_dAngleResolution; }
+int CSICKLaserScanner::getAngleResolution() { return m_nAngleResolution; }
 int CSICKLaserScanner::getStartAngle() { return m_nStartAngle; }
 int CSICKLaserScanner::getEndAngle() { return m_nEndAngle; }
 bool CSICKLaserScanner::getUpsideDown() { return m_bUpsideDown; }
-int CSICKLaserScanner::getResolDeg() { return int(1 / m_dAngleResolution); }
 int CSICKLaserScanner::getConnectionTimeout(){ return m_nConnectionTimeout; }
 int CSICKLaserScanner::getDataTimeout() { return m_nDataTimeout; }
 string CSICKLaserScanner::getIP() { return string(m_cpIP); }
@@ -210,28 +211,28 @@ int CSICKLaserScanner::setFreqency(int freq) {
 	}
 	return RETURN_NON_ERROR;
 }
-int CSICKLaserScanner::setAngleResolution(double resol) {
+int CSICKLaserScanner::setAngleResolution(int resol) {
 	// 모델별 파라미터 설정
 	switch (m_eModel) {
 	case eSICKLaserScannerModel::LMS1xx:
-		if (resol != 0.25 || resol != 0.5)
+		if (resol != 4|| resol != 2)
 		{
-			//g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LASER_INVALID_PARAMETER, true, true);
-			return RETURN_NON_ERROR;
+			g_eventManager->PushTask(MSG_WARN, getSensorName(), WARN_INVALID_ANGLE_RESOLUTION, true, false);
+			return RETURN_FAILED;
 		}
 		break;
 	case eSICKLaserScannerModel::TiMxxx:
-		if (resol != 0.33 || resol != 1.0)
+		if (resol != 3 || resol != 1)
 		{
-			//g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LASER_INVALID_PARAMETER, true, true);
-			//return RETURN_NON_ERROR;
+			g_eventManager->PushTask(MSG_WARN, getSensorName(), WARN_INVALID_ANGLE_RESOLUTION, true, false);
+			return RETURN_FAILED;
 		}
 		break;
 	}
-	m_dAngleResolution = resol;
+	m_nAngleResolution = resol;
 	return RETURN_NON_ERROR;
 }
-int CSICKLaserScanner::setStartAngle(double angle) {
+int CSICKLaserScanner::setStartAngle(int angle) {
 	if (angle < -45 || angle > 225 || angle > m_nEndAngle)
 	{
 		//g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LASER_INVALID_PARAMETER, true, true);
@@ -240,7 +241,7 @@ int CSICKLaserScanner::setStartAngle(double angle) {
 	m_nStartAngle = angle;
 	return RETURN_NON_ERROR;
 }
-int CSICKLaserScanner::setEndAngle(double angle) {
+int CSICKLaserScanner::setEndAngle(int angle) {
 	if (angle < -45 || angle > 225 || angle < m_nStartAngle) 
 	{
 		//g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LASER_INVALID_PARAMETER, true, true);
@@ -256,7 +257,7 @@ int CSICKLaserScanner::setUpsideDown(bool upsideDown) {
 
 // private
 void CSICKLaserScanner::SetLaserScanData() {
-	m_bufferA.data_len = m_bufferB.data_len = int(getResolDeg() * (225+45)) + 1;
+	m_bufferA.data_len = m_bufferB.data_len = int(getAngleResolution() * (225+45)) + 1;
 	m_bufferA.start_angle = m_bufferB.start_angle = m_nStartAngle;
 	m_bufferA.end_angle = m_bufferB.end_angle = m_nEndAngle;
 	m_bufferA.dist = new UINT16[m_bufferA.data_len];

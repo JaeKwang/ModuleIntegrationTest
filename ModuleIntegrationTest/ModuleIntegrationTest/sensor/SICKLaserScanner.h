@@ -19,7 +19,7 @@ namespace sensor {
 
 		eSICKLaserScannerModel m_eModel;
 		int m_nFreqency;
-		double m_dAngleResolution;
+		int m_nAngleResolution;
 		int m_nStartAngle;
 		int m_nEndAngle;
 		bool m_bUpsideDown;
@@ -68,20 +68,19 @@ namespace sensor {
 		int getData(LaserScanData *);
 		int getModel();
 		int getFreqency();
-		double getAngleResolution();
+		int getAngleResolution();
 		int getStartAngle();
 		int getEndAngle();
 		bool getUpsideDown();
-		int getResolDeg();
 		int getConnectionTimeout();
 		int getDataTimeout();
 		int getPort();
 		std::string getIP();
 		int setModel(int);
 		int setFreqency(int);
-		int setAngleResolution(double);
-		int setStartAngle(double);
-		int setEndAngle(double);
+		int setAngleResolution(int);
+		int setStartAngle(int);
+		int setEndAngle(int);
 		int setUpsideDown(bool);
 		int setIP(std::string);
 		int setPort(int);

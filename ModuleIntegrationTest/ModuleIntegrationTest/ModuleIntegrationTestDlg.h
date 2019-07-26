@@ -107,4 +107,10 @@ public:
 	CListBox m_listEventManager;
 	afx_msg void OnBnClickedButtonErrorclear();
 	afx_msg void OnBnClickedCancel();
+	CButton m_checkLaser2UpsideDown;
+	CButton m_checkLaser1UpsideDown;
+	afx_msg void OnBnClickedButtonLaser1Cancel();
+	afx_msg void OnBnClickedButtonLaser2Cancel();
+	afx_msg void OnBnClickedButtonLaser1Apply();
+	afx_msg void OnBnClickedButtonLaser2Apply();
 };

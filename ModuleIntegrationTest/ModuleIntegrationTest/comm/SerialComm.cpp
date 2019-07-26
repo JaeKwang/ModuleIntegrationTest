@@ -218,7 +218,7 @@ BOOL CSerialComm::DestroyComm()
 // close connection
 BOOL CSerialComm::CloseConnection()
 {
-	fConnected = false;
+	fConnected = FALSE;
 	if (hComm != INVALID_HANDLE_VALUE) {
 		CloseHandle(hComm);
 		hComm = INVALID_HANDLE_VALUE;

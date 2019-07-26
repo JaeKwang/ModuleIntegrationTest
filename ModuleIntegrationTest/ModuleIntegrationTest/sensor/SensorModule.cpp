@@ -13,6 +13,7 @@ CSensorModule::CSensorModule(string name) :m_strSensorName(name) {
 	m_eState = STATE_INIT;
 	m_nThreadPeriod = 100;
 	m_nDataCheckCount = 3;
+	m_nTerminateTimeout = 1000;
 }
 CSensorModule::~CSensorModule() {
 	m_bStateMachineThreadLoop = false;
@@ -23,8 +24,7 @@ CSensorModule::~CSensorModule() {
 			m_StateMachineThread.join();
 	}
 	// Memory clear
-	AutoCSLock cs(m_cs);
-	
+	AutoCSLock cs(m_cs);	
 	
 	while (!m_cmds.empty())
 	{
@@ -32,7 +32,6 @@ CSensorModule::~CSensorModule() {
 		m_cmds.pop();
 	}
 	
-
 	g_eventManager->PushTask(MSG_INFO, getSensorName(), INFO_MODULE_DELETE_SUCCEED, true, false);
 }
 // State Machine Functions
