@@ -142,8 +142,8 @@ namespace sensor {
 		int getPort();
 		ULONG getDeviceID(int index);
 		int getDeviceNum();
-		short* getFrontData();
-		short* getRearData();
+		void getFrontData(short* lcp1, short* lcp2, short* lcp3);
+		void getRearData(short* lcp1, short* lcp2, short* lcp3);
 		int getFrontMarker();
 		int getRearMarker();
 	};

@@ -51,3 +51,4 @@
 #endif
 
 extern eventManager::CEventManager *g_eventManager;
+extern void Wait(DWORD dwMilliSecond);

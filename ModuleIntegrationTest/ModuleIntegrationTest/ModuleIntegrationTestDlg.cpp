@@ -130,6 +130,7 @@ BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_GYRO_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonGyroConnect)
 	ON_BN_CLICKED(IDC_BUTTON_GYRO_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonGyroReset)
 	ON_BN_CLICKED(IDC_BUTTON_ERRORCLEAR, &CModuleIntegrationTestDlg::OnBnClickedButtonErrorclear)
+	ON_BN_CLICKED(IDCANCEL, &CModuleIntegrationTestDlg::OnBnClickedCancel)
 END_MESSAGE_MAP()
 
 
@@ -169,12 +170,12 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 
 	// LMS 2, Gyro 1, Cancard 1, Motion 1, ComizoaIO 1
 	m_sensor = new CSensorModule *[5];
-	m_sensor[0] = new CSICKLaserScanner("LMS_Front", LMS1xx, "192.168.1.161", 2111, false);
-	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", LMS1xx, "192.168.0.1", 2111, false);
+	m_sensor[0] = new CSICKLaserScanner("LMS_Front", TiMxxx, "192.168.1.161", 2111, false);
+	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", TiMxxx, "192.168.1.160", 2111, false);
 	m_sensor[2] = new CSICKGuide("Guide", 3, 125, 100, 2);
 	((CSICKGuide*)m_sensor[2])->setDeviceID(0, 0x18a);
 	((CSICKGuide*)m_sensor[2])->setDeviceID(1, 0x18b);
-	m_sensor[3] = new CGyroSensor("Gyro", 4, 115200);
+	m_sensor[3] = new CGyroSensor("Gyro", 5, 38400);
 
 	m_IOHub = new CIOHub("./inifiles/SAMSUNG_AMR_IO_List.ini");
 	
@@ -189,8 +190,9 @@ void CModuleIntegrationTestDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	//for (int i = 0; i < 8; i++)
-	delete m_sensor[0];
+	for (int i = 0; i < 4; i++)
+		delete m_sensor[i];
+	delete m_IOHub;
 	g_eventManager->PushTask(MSG_INFO, "", INFO_PROGRAM_TERMINATED, true, false);
 }
 
@@ -548,8 +550,10 @@ void CModuleIntegrationTestDlg::UIGuideDataUpdate() {
 	}
 
 	if (m_sensor[2]->getStatus() == STATE_RUN) {
-		short* a = ((CSICKGuide *)m_sensor[2])->getFrontData();
-		short* b = ((CSICKGuide *)m_sensor[2])->getRearData();
+		short a[3];
+		((CSICKGuide *)m_sensor[2])->getFrontData(&a[0], &a[1], &a[2]);
+		short b[3];
+		((CSICKGuide *)m_sensor[2])->getRearData(&b[0], &b[1], &b[2]);
 		short markerF = ((CSICKGuide *)m_sensor[2])->getFrontMarker();
 		short markerR = ((CSICKGuide *)m_sensor[2])->getRearMarker();
 
@@ -702,7 +706,7 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonGyroConnect()
 {
 	CGyroSensor* s = dynamic_cast<CGyroSensor*>(m_sensor[3]);
 	CString str;
-	m_editGuidePort.GetWindowTextW(str);
+	m_editGyroPort.GetWindowTextW(str);
 	s->SetPort(_ttoi(str));
 	m_editGyroBaudrate.GetWindowTextW(str);
 	s->SetBaudrate(_ttoi(str));
@@ -719,4 +723,11 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonGyroReset()
 void CModuleIntegrationTestDlg::OnBnClickedButtonErrorclear()
 {
 	g_eventManager->clearError();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedCancel()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	CDialogEx::OnCancel();
 }

@@ -106,4 +106,5 @@ public:
 	afx_msg void OnBnClickedButtonGyroReset();
 	CListBox m_listEventManager;
 	afx_msg void OnBnClickedButtonErrorclear();
+	afx_msg void OnBnClickedCancel();
 };

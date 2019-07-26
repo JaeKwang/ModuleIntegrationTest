@@ -20,6 +20,9 @@ CComizoaIO::CComizoaIO(string name, long lNodeID, DIOModule* DIOModules, int nDI
 		m_WriteData[i] = 0;
 	}
 	setThreadPeriod(50);
+	if (initialization() == RETURN_NON_ERROR)
+		OccurError();
+
 	m_bInitialized = false;
 	if (initialization() == RETURN_NON_ERROR)
 		m_bInitialized = true;
@@ -33,6 +36,7 @@ int CComizoaIO::initialization() {
 	{
 		HINSTANCE ret = ::ShellExecute(NULL, _T("open"), _T("ceSDKDaemon.exe"), NULL, _T("C:\\Program Files\\COMIZOA\\AUTOMATION3\\COMMON\\Apps\\cEIP\\x86\\ceNM-IP Based\\Daemon"), SW_SHOW);
 		_RPTN(_CRT_WARN, "ret: %d\n", ret);
+		Sleep(1000);
 	}
 	nCount_PID = clSystemCheck.CheckPID(_T("ceSDKDaemon.exe"));
 	if (nCount_PID < 1)
@@ -48,19 +52,13 @@ int CComizoaIO::initialization() {
 		g_eventManager->PushTask(eventManager::MSG_ERROR, getSensorName(), eventManager::ERROR_LOADING_LIBRARY_FAILED, true, true);
 		return RETURN_FAILED;
 	}
-	if (ceGnLoad() != ceERR_NONE)
-	{
-		//디바이스를 로드 실패
-		g_eventManager->PushTask(eventManager::MSG_ERROR, getSensorName(), eventManager::ERROR_LOADING_DEVICE_FAILED, true, true);
-		return RETURN_FAILED;
-	}
 	return RETURN_NON_ERROR;
 }
 CComizoaIO::~CComizoaIO() 
 {
 	DisconnectAct();
-	ceGnUnload();
-	ceUnloadDll();
+	if (m_bInitialized)
+		ceUnloadDll();
 }
 int CComizoaIO::ConnectAct() 
 {
@@ -70,6 +68,15 @@ int CComizoaIO::ConnectAct()
 		else
 			return RETURN_FAILED;
 	}
+
+	// 디바이스 로드
+	if (ceGnLoad() != ceERR_NONE)
+	{
+		//디바이스를 로드 실패
+		g_eventManager->PushTask(eventManager::MSG_ERROR, getSensorName(), eventManager::ERROR_LOADING_DEVICE_FAILED, true, true);
+		return RETURN_FAILED;
+	}
+
 	//NM-IP 노드의 개수를 확인한다.
 	long nIsSearchedDev = 0, nNodeCnt = 0;
 	ceGnIsSearchedDevice(&nIsSearchedDev);
@@ -171,7 +178,10 @@ int CComizoaIO::ConnectAct()
 }
 int CComizoaIO::DisconnectAct() 
 {
+	if (!m_bInitialized)
+		return RETURN_FAILED;
 	ceGnResetNode(m_lNodeID, CE_RESET_ALL);
+	ceGnUnload();
 	return RETURN_NON_ERROR;
 }
 int CComizoaIO::ResetAct() 
@@ -192,8 +202,7 @@ int CComizoaIO::ResetAct()
 		}
 	}
 	ceGnResetNode(1, CE_RESET_ALL);
-	ConnectAct();
-	return RETURN_NON_ERROR;
+	return ConnectAct();
 }
 int CComizoaIO::UpdateData() 
 {

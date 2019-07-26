@@ -24,11 +24,15 @@ CSensorModule::~CSensorModule() {
 	}
 	// Memory clear
 	AutoCSLock cs(m_cs);
+	
+	
 	while (!m_cmds.empty())
 	{
 		delete &(m_cmds.front());
 		m_cmds.pop();
 	}
+	
+
 	g_eventManager->PushTask(MSG_INFO, getSensorName(), INFO_MODULE_DELETE_SUCCEED, true, false);
 }
 // State Machine Functions

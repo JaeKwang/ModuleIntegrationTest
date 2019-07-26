@@ -21,8 +21,6 @@ CIOHub::~CIOHub()
 }
 int CIOHub::Initialize() {
 	m_pINIReaderWriter = new PINIReadWriter(m_strIniFileName);	//설정파일 읽기
-
-																//파일을 읽지 못한 경우 프로그램을 종료
 	if (m_pINIReaderWriter->ParseError() < 0)
 	{
 		g_eventManager->PushTask(MSG_ERROR, "IOHub", ERROR_FILE_READ_FAILED, true, false);

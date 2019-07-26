@@ -97,7 +97,10 @@ int CSICKGuide::UpdateData()
 			}
 		}
 		else
+		{
 			break;
+		}
+
 	}
 
 	return RETURN_NON_ERROR;
@@ -343,20 +346,15 @@ int CSICKGuide::EnterWorkMode()
 
 	return SUCCESS;
 }
-short* CSICKGuide::getFrontData() {
-
-	short ret[3];
-	ret[0] = guide_lcp1[0];
-	ret[1] = guide_lcp2[0];
-	ret[2] = guide_lcp3[0];
-	return ret;
+void CSICKGuide::getFrontData(short* lcp1, short* lcp2, short* lcp3) {
+	*lcp1 = guide_lcp1[0];
+	*lcp2 = guide_lcp2[0];
+	*lcp3 = guide_lcp3[0];
 }
-short* CSICKGuide::getRearData() {
-	short ret[3];
-	ret[0] = guide_lcp1[1];
-	ret[1] = guide_lcp2[1];
-	ret[2] = guide_lcp3[1];
-	return ret;
+void CSICKGuide::getRearData(short* lcp1, short* lcp2, short* lcp3) {
+	*lcp1 = guide_lcp1[1];
+	*lcp2 = guide_lcp2[1];
+	*lcp3 = guide_lcp3[1];
 }
 int CSICKGuide::getFrontMarker() {
 	return guide_marker[0];

@@ -149,9 +149,9 @@ BOOL CSerialComm::OpenComport()
 		PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
 		CommTimeOuts.ReadIntervalTimeout=0xFFFFFFFF;
 		CommTimeOuts.ReadTotalTimeoutMultiplier=0;
-		CommTimeOuts.ReadTotalTimeoutConstant=1000;
+		CommTimeOuts.ReadTotalTimeoutConstant=200;
 		CommTimeOuts.WriteTotalTimeoutMultiplier=0;
-		CommTimeOuts.WriteTotalTimeoutConstant=1000;
+		CommTimeOuts.WriteTotalTimeoutConstant=200;
 		SetCommTimeouts(hComm, &CommTimeOuts);
 	}
 
@@ -196,15 +196,17 @@ int CSerialComm::ReadCommBlock(LPSTR lpszBlock, int nMaxLength)
 	DWORD dwLength;
 
 	//only try to read number of bytes in queue
+
 	ClearCommError(hComm, &dwErrorFlags, &ComStat);
-	dwLength=min((DWORD)nMaxLength, ComStat.cbInQue);
-	if(dwLength>0) {
-		fReadStat=ReadFile(hComm, lpszBlock, dwLength, &dwLength, &osRead);
-		if(!fReadStat) {
+	dwLength = min((DWORD)nMaxLength, ComStat.cbInQue);
+	if (dwLength > 0) {
+		fReadStat = ReadFile(hComm, lpszBlock, dwLength, &dwLength, &osRead);
+		if (!fReadStat) {
 		}
 	}
 	return dwLength;
 }
+
 
 // remove comport completely
 BOOL CSerialComm::DestroyComm()
@@ -216,14 +218,13 @@ BOOL CSerialComm::DestroyComm()
 // close connection
 BOOL CSerialComm::CloseConnection()
 {
-	//set connected flag to FALSE;
-	fConnected=FALSE;
-	SetCommMask(hComm, 0);
-	EscapeCommFunction(hComm, CLRDTR);
-	PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
-	CloseHandle(hComm);
-
-	return TRUE;
+	fConnected = false;
+	if (hComm != INVALID_HANDLE_VALUE) {
+		CloseHandle(hComm);
+		hComm = INVALID_HANDLE_VALUE;
+		return true;
+	}
+	return false;
 }
 
 BOOL CSerialComm::WriteCommBlock(LPSTR lpByte, DWORD dwBytesToWrite)
