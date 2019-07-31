@@ -4,7 +4,6 @@
 #include "SensorModule.h"
 #include <iostream>
 #include "comm\SerialComm.h"
-#include <afxmt.h>
 
 #define MAX_TIMEOUT 1000
 #define	MAX_RECONNECT_COUNT 10

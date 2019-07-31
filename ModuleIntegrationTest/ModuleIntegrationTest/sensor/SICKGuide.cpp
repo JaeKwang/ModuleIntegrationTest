@@ -33,6 +33,19 @@ CSICKGuide::CSICKGuide(string name, int nPort, int nBaudrate_k, int nTimeOut_ms,
 }
 CSICKGuide::~CSICKGuide() {
 	DisconnectAct();
+	SAFE_DELETE(guide_reading_code);
+	SAFE_DELETE(guide_line_good);
+	SAFE_DELETE(guide_linelev);
+	SAFE_DELETE(guide_marker);
+	SAFE_DELETE(guide_line_exists);
+	SAFE_DELETE(guide_status);
+	SAFE_DELETE(guide_lcp);
+	SAFE_DELETE(guide_lcp3);
+	SAFE_DELETE(guide_lcp2);
+	SAFE_DELETE(guide_lcp1);
+	SAFE_DELETE(m_lDeviceID);
+	for(int i = 0; i < m_nDeviceNum; i++)
+		SAFE_DELETE(cReadData_8Byte_One[i]);
 }
 int CSICKGuide::ConnectAct() {
 	if (m_nPort == -1 || m_nBaudrate_k == -1)
@@ -78,29 +91,21 @@ int CSICKGuide::UpdateData()
 			guide_line_exists[i] = (int)(cReadData_8Byte_One[i][6] & 0x07);
 			guide_marker[i] = (int)((cReadData_8Byte_One[i][6] & 0xF0) >> 4);
 			if (cReadData_8Byte_One[i][7] & 0x01)
-			{
 				guide_line_good[i] = true;
-			}
 			else
-			{
 				guide_line_good[i] = false;
-			}
 
 			guide_linelev[i] = (int)((cReadData_8Byte_One[i][7] & 0x0E) >> 1);
 			if (cReadData_8Byte_One[i][7] & 0x40)
-			{
 				guide_reading_code[i] = true;
-			}
 			else
-			{
 				guide_reading_code[i] = false;
-			}
 		}
+		// พ๘ดย ID
 		else
-		{
 			break;
-		}
-
+		if (i == m_nDeviceNum - 1)
+			ClearRxFifo();
 	}
 
 	return RETURN_NON_ERROR;

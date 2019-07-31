@@ -56,10 +56,13 @@ int CComizoaIO::initialization() {
 }
 CComizoaIO::~CComizoaIO()
 {
-	Disconnect();
+	if(getStatus() != STATE_INIT)
+		Disconnect();
 	if (m_bInitialized)
 		ceUnloadDll();
 	while (getStatus() != STATE_INIT);
+	SAFE_DELETE(m_ReadData);
+	SAFE_DELETE(m_WriteData);
 }
 int CComizoaIO::ConnectAct()
 {
@@ -230,7 +233,8 @@ int CComizoaIO::bitSet(int moduleNum, int pin, bool value) {
 	if (moduleNum < 0)
 		return RETURN_FAILED;
 	int errorCode;
-	if (value != bitRead(moduleNum, pin, &errorCode)) {
+	bool curValue = bitRead(moduleNum, pin, &errorCode);
+	if (value != curValue) {
 		if (value)
 			m_WriteData[moduleNum] = m_WriteData[moduleNum] + (0x01 << pin);
 		else

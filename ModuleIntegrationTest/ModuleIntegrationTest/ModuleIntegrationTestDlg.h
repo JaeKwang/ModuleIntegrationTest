@@ -8,6 +8,8 @@
 #include "sensor\SensorModule.h"
 #include "sensor\IOHub.h"
 
+#include "robot\AMRController.h"
+
 // CModuleIntegrationTestDlg 대화 상자
 class CModuleIntegrationTestDlg : public CDialogEx
 {
@@ -31,11 +33,14 @@ protected:
 	sensor::CIOHub * m_IOHub;
 	LaserScanData m_LaserData1;
 
+	robot::CAMRController * m_AMRController;
+
 	void UpdateUI();
 	void UILaserScanDataUpdate(sensor::CSensorModule *, int);
 	void UIComizoaDataUpdate();
 	void UIGuideDataUpdate();
 	void UIGyroDataUpdate();
+	void UIMotionUpdate();
 	void UIEventManagerUpdate();
 	// 생성된 메시지 맵 함수
 	virtual BOOL OnInitDialog();
@@ -113,4 +118,27 @@ public:
 	afx_msg void OnBnClickedButtonLaser2Cancel();
 	afx_msg void OnBnClickedButtonLaser1Apply();
 	afx_msg void OnBnClickedButtonLaser2Apply();
+	CEdit m_editMotionSpeed;
+	CEdit m_editMotionAccel;
+	CEdit m_editMotionDecel;
+	CEdit m_editMotionState;
+	CStatic m_editMotionData;
+	afx_msg void OnBnClickedButtonMotionConnect();
+	afx_msg void OnBnClickedButtonMotionReset();
+	afx_msg void OnBnClickedButtonMotionApply();
+	afx_msg void OnBnClickedButtonMotionCancel();
+	afx_msg void OnBnClickedButtonMotionMove();
+	CEdit m_editObstacle;
+	CEdit m_editRotation;
+	CEdit m_editDrive;
+	CEdit m_editCurRotate;
+	CEdit m_editCurDrive;
+	afx_msg void OnBnClickedButtonObstacle();
+	CEdit m_editAMRState;
+	afx_msg void OnBnClickedButtonMotionServoOn();
+	afx_msg void OnBnClickedButtonMotionServoOff();
+	afx_msg void OnBnClickedButtonMotionEstop();
+	afx_msg void OnBnClickedButtonMotionStop();
+	afx_msg void OnBnClickedButtonDrive();
+	afx_msg void OnBnClickedButtonRotate();
 };

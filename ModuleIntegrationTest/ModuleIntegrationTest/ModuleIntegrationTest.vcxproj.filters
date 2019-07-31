@@ -46,6 +46,9 @@
     <Filter Include="헤더 파일\robot">
       <UniqueIdentifier>{3a63eb94-2f24-4604-9b36-9037649586c7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\robot">
+      <UniqueIdentifier>{52453b83-ffcb-4423-99d2-54008d6ae23f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -120,6 +123,21 @@
     <ClInclude Include="comm\SerialComm.h">
       <Filter>헤더 파일\comm</Filter>
     </ClInclude>
+    <ClInclude Include="sensor\ComizoaMotionController.h">
+      <Filter>헤더 파일\sensor</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\driver\Cmmsdk.h">
+      <Filter>헤더 파일\sensor\driver</Filter>
+    </ClInclude>
+    <ClInclude Include="sensor\driver\CmmsdkDef.h">
+      <Filter>헤더 파일\sensor\driver</Filter>
+    </ClInclude>
+    <ClInclude Include="robot\AMRController.h">
+      <Filter>헤더 파일\robot</Filter>
+    </ClInclude>
+    <ClInclude Include="robot\ObstacleChecker.h">
+      <Filter>헤더 파일\robot</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModuleIntegrationTest.cpp">
@@ -169,6 +187,18 @@
     </ClCompile>
     <ClCompile Include="comm\SerialComm.cpp">
       <Filter>소스 파일\comm</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\ComizoaMotionController.cpp">
+      <Filter>소스 파일\sensor</Filter>
+    </ClCompile>
+    <ClCompile Include="sensor\driver\Cmmsdk.cpp">
+      <Filter>소스 파일\sensor\driver</Filter>
+    </ClCompile>
+    <ClCompile Include="robot\AMRController.cpp">
+      <Filter>소스 파일\robot</Filter>
+    </ClCompile>
+    <ClCompile Include="robot\ObstacleChecker.cpp">
+      <Filter>소스 파일\robot</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

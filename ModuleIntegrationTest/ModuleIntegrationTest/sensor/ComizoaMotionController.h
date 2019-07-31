@@ -3,6 +3,14 @@
 #include "SensorModule.h"
 #include "driver/CmmsdkDef.h"
 
+#define CME_FILE_NAME "C:\\potenit\\motor_param\\Default.cme2"
+#define MAX_TIMEOUT 5000
+#define	MAX_RECONNECT_COUNT 10
+#define Acceleration 1000
+#define Deceleration 1000
+#define ENCMAX (2147483647.0) // robotcubeÀÎ °æ¿ì
+#define ROTATION_CHECK_RANGE		3.0	
+
 namespace sensor 
 {
 	enum eMotorAxis
@@ -37,11 +45,15 @@ namespace sensor
 		int UpdateData() override;
 		int DisconnectAct() override;
 
+		double m_dRightEncoder;
+		double m_dLeftEncoder;
+		double m_dRightTarget;
+		double m_dLeftTarget;
+
 	public:
 		CComizoaMotionController(std::string);
 		~CComizoaMotionController();
 		
-
 		int Initialize();
 		bool m_bConnected;
 		int SetDataTimeout(int nTimeout);
@@ -53,7 +65,6 @@ namespace sensor
 		
 		int m_iThreadPeriod;
 		bool isDoneMotion(eMotorAxis eAxis);
-		//TCmBool = cmFALSE, cmTRUE
 		int MotionStop(bool bEMG, eMotorAxis eAxis, bool isWaiting, bool isBlocking);
 		int SetMotionSpeed(eMotorAxis eAxis, int lSpeedMode, double dWorkSpeed, double dAccel, double dDecel);
 		int SetMotionSpeed(int eAccelMode, double left, double right);
@@ -68,13 +79,14 @@ namespace sensor
 		int ResetPosition(eMotorAxis eAxis);
 		int GetPosition(eMotorAxis eAxis, eCounterName eCounter, double dCurPos);
 		int InitDrivingMotorSpeed();
-		int InitDrivingMotor();
 		int SetDriveWheelCount();
 		int InitLiftMotor();
 		int LiftMotorHoming();
 		int LiftUpDown(bool bUpside);
+		int CheckEncodeerValue(double dInputEncoder, double *dEncoderL, double *dEncoderR);
 
-		long lLeftMotorDirection, lRightMotorDirection;
+
+		long m_lLeftMotorDirection, m_lRightMotorDirection;
 		bool m_bDriveMotorBrake = true;  //On : True, Off : False
 		bool m_bLiftMotorBrake = true; //On : True, Off : False
 		double m_dLiftUpLimint;
@@ -83,6 +95,12 @@ namespace sensor
 		int m_iConnectionTimeout;
 		int m_iLiftMotorCount;
 		int m_iReconnectionCount;
-		// Getter & Setter		
+		double m_dGyroTargetAngle;
+		
+		// Getter & Setter
+		void setRightTarget(double);
+		void setLeftTarget(double);
+		double getLeftEncoder();
+		double getRightEncoder();
 	};
 }

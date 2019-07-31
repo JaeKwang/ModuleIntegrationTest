@@ -11,11 +11,7 @@ namespace sensor {
 		CMD_DISCONNECT,
 		CMD_ERROR,
 	};
-	enum eReturnCode {
-		RETURN_NON_ERROR = 0,
-		RETURN_DATA_CHECK_FAILED,
-		RETURN_FAILED,
-	};
+	
 	enum eSensorStatus {
 		STATE_INIT,
 		STATE_PROGRESSING,

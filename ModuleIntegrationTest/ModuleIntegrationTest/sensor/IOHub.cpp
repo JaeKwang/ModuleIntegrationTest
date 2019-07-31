@@ -17,7 +17,11 @@ CIOHub::CIOHub(string filename) {
 }
 CIOHub::~CIOHub()
 {
-	delete m_ComizoaIO;
+	SAFE_DELETEA(m_DOPinType);
+	SAFE_DELETEA(m_DIPinType);
+	SAFE_DELETE(m_ComizoaIO);
+	SAFE_DELETE(m_DIOModule);
+	SAFE_DELETE(m_pINIReaderWriter);
 }
 int CIOHub::Initialize() {
 	m_pINIReaderWriter = new PINIReadWriter(m_strIniFileName);	//설정파일 읽기
@@ -79,18 +83,12 @@ int CIOHub::bitSet(int dioNum, int base, int offset, bool value) {
 		return RETURN_FAILED;
 }
 int CIOHub::bitSet(eDO_Code IOPin, bool value) {
-	const char * model = m_DOPinType[IOPin].strModel.c_str();
-	if (_strcmpi(model, "comizoa")) {
-		CComizoaIO * c = dynamic_cast<CComizoaIO *>(m_ComizoaIO);
-		if (m_DOPinType[IOPin].bActive)
-			return c->bitSet(m_DOPinType[IOPin].nDIONumber, m_DOPinType[IOPin].nPinPosition, value);
-		else
-			return c->bitSet(m_DOPinType[IOPin].nDIONumber, m_DOPinType[IOPin].nPinPosition, !value);
-	}
-	else {
-		g_eventManager->PushTask(MSG_ERROR, "IOHub", ERROR_NOT_DEFINED_PIN, true, true);
-		return RETURN_DATA_CHECK_FAILED;
-	}
+	CComizoaIO * c = dynamic_cast<CComizoaIO *>(m_ComizoaIO);
+	if (m_DOPinType[IOPin].bActive)
+		return c->bitSet(m_DOPinType[IOPin].nDIONumber, m_DOPinType[IOPin].nPinBase + m_DOPinType[IOPin].nPinPosition, value);
+	else
+		return c->bitSet(m_DOPinType[IOPin].nDIONumber, m_DOPinType[IOPin].nPinBase + m_DOPinType[IOPin].nPinPosition, !value);
+
 	return RETURN_NON_ERROR;
 }
 bool CIOHub::bitRead(int dioNum, int base, int offset, int * nErrorCode){
@@ -106,6 +104,7 @@ bool CIOHub::bitRead(eDI_Code IOPin, int * nErrorCode) {
 	int errorCode;
 	bool ret = c->bitRead(m_DIPinType[IOPin].nDIONumber, m_DIPinType[IOPin].nPinPosition, &errorCode);
 	*nErrorCode = errorCode;
+	if (!m_DIPinType[IOPin].bActive) ret = !ret;
 	return ret;
 }
 bool CIOHub::bitRead(IO_List::eDO_Code IOPin, int * nErrorCode) {

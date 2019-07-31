@@ -98,6 +98,13 @@ int CSensorModule::ThreadFunction_StateMachine(CSensorModule *sensor) {
 					}
 					start = clock();
 				}
+				else if (cmd == CMD_DISCONNECT) {
+					sensor->m_eState = STATE_PROGRESSING;
+					sensor->DisconnectAct();
+					g_eventManager->PushTask(MSG_INFO, sensor->getSensorName(), INFO_DISCONNECT_SUCCEED, true, false);
+					sensor->m_eState = STATE_INIT;
+					start = clock();
+				}
 				break;
 			}
 		}

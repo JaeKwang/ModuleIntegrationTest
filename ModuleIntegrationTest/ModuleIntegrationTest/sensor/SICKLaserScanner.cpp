@@ -47,8 +47,9 @@ CSICKLaserScanner::CSICKLaserScanner(string sensorName, eSICKLaserScannerModel m
 
 CSICKLaserScanner::~CSICKLaserScanner() {
 	Disconnect();
-	delete m_client;
 	while (getStatus() != STATE_INIT);
+	SAFE_DELETE(m_cpIP);
+	SAFE_DELETE(m_client);
 }
 int CSICKLaserScanner::ConnectAct() {
 	// Communication specification
@@ -160,7 +161,7 @@ int CSICKLaserScanner::setIP(string ip) {
 		return RETURN_NON_ERROR;
 	}
 
-	_DEPRECATE_UNCHECKED(copy, m_cpIP);
+	//_DEPRECATE_UNCHECKED(copy, m_cpIP);
 	copy(ip.begin(), ip.end(), m_cpIP);
 	m_cpIP[ip.length()] = '\0';
 	return RETURN_NON_ERROR;
@@ -257,14 +258,15 @@ int CSICKLaserScanner::setUpsideDown(bool upsideDown) {
 
 // private
 void CSICKLaserScanner::SetLaserScanData() {
-	m_bufferA.data_len = m_bufferB.data_len = int(getAngleResolution() * (225+45)) + 1;
-	m_bufferA.start_angle = m_bufferB.start_angle = m_nStartAngle;
-	m_bufferA.end_angle = m_bufferB.end_angle = m_nEndAngle;
-	m_bufferA.dist = new UINT16[m_bufferA.data_len];
-	m_bufferB.dist = new UINT16[m_bufferB.data_len];
-	m_bufferA.rssi = new UINT16[m_bufferA.data_len];
-	m_bufferB.rssi = new UINT16[m_bufferB.data_len];
-	m_nResSize=m_bufferA.data_len * 10 + 20;	// 10 = DIST 1~5 + RSSI 1~5 ,20 = telegram header
+	m_bufferA.nData_len = m_bufferB.nData_len = int(getAngleResolution() * (225+45)) + 1;
+	m_bufferA.nAngleResolution = m_bufferB.nAngleResolution = m_nAngleResolution;
+	m_bufferA.nStart_angle = m_bufferB.nStart_angle = m_nStartAngle;
+	m_bufferA.nEnd_angle = m_bufferB.nEnd_angle = m_nEndAngle;
+	m_bufferA.dist = new UINT16[m_bufferA.nData_len];
+	m_bufferB.dist = new UINT16[m_bufferB.nData_len];
+	m_bufferA.rssi = new UINT16[m_bufferA.nData_len];
+	m_bufferB.rssi = new UINT16[m_bufferB.nData_len];
+	m_nResSize=m_bufferA.nData_len * 10 + 20;	// 10 = DIST 1~5 + RSSI 1~5 ,20 = telegram header
 	m_res = new unsigned char[m_nResSize]; 
 }
 int CSICKLaserScanner::DeviceInitialize()
@@ -414,7 +416,7 @@ int CSICKLaserScanner::DecodeScanDataAll_LMS100(int datanum)
 		int NumberData;
 		std::sscanf(tok, "%X", &NumberData);
 		scanCount = NumberData;
-		if(NumberData != m_bufferA.data_len)
+		if(NumberData != m_bufferA.nData_len)
 			return RETURN_FAILED;
 		LaserScanData* curBuffer = m_bBufferSwitch ? &m_bufferB : &m_bufferA;
 		if (!m_bUpsideDown)

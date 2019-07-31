@@ -2,15 +2,8 @@
 #include "ComizoaMotionController.h"
 #include "driver/Cmmsdk.h"
 
-#define CME_FILE_NAME "C:\\potenit\\motor_param\\Default.cme2"
-#define MAX_TIMEOUT 5000
-#define	MAX_RECONNECT_COUNT 10
-#define Accel 1000
-#define Decel 1000
-#define M_PI		3.14159265358979323846	// pi 
-
-using namespace sensor;
 using namespace eventManager;
+using namespace sensor;
 using namespace std;
 
 CComizoaMotionController::CComizoaMotionController(string name):CSensorModule(name)
@@ -21,16 +14,21 @@ CComizoaMotionController::CComizoaMotionController(string name):CSensorModule(na
 	m_dLiftUpLimint = 0.0;
 	m_dLiftDownLimit = 0.0;
 	m_bConnected = false;
+	m_dGyroTargetAngle = 0.0;
 }
 
 CComizoaMotionController::~CComizoaMotionController() 
 {
-	DisconnectAct();
+	MotionStop(true, LEFT_DRIVE_MOTOR, 0, 0);
+	MotionStop(true, RIGHT_DRIVE_MOTOR, 0, 0);
+	Disconnect();
+	while (getStatus() != STATE_INIT);
 }
 
 int CComizoaMotionController::ConnectAct() 
 {
-	long nNumAxes = 0;
+	long nNumAxes;
+	
 	if (cmmLoadDll() != TRUE) //DLL을 로드합니다.
 	{
 		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LOADING_LIBRARY_FAILED, true, false);
@@ -45,37 +43,76 @@ int CComizoaMotionController::ConnectAct()
 	}
 
 	m_bConnected = true;
-	Initialize();
-	return RETURN_NON_ERROR;
-}
-int CComizoaMotionController::DisconnectAct() 
-{
-	InitDrivingMotor();
-	m_bConnected = false;
-	return RETURN_NON_ERROR;
-}
-int CComizoaMotionController::ResetAct() 
-{
-	return RETURN_NON_ERROR;
-}
-int CComizoaMotionController::UpdateData() 
-{
-	return RETURN_NON_ERROR;
+	return Initialize();
 }
 
 int CComizoaMotionController::Initialize()
 {
-	//Device 초기화
-	// 해당축이 작업중이면 정지(停止)하고 다시 시작 //
-	if (InitDrivingMotor() != RETURN_NON_ERROR)
-	{
+	if (InitDrivingMotorSpeed() != RETURN_NON_ERROR)
 		return RETURN_FAILED;
-	}
-	//if (InitLiftMotor() != RETURN_NON_ERROR)
-	//{
-	//	return RETURN_FAILED;
-	//}
 
+	if (InitializeFromFile() != RETURN_NON_ERROR)
+		return RETURN_FAILED;
+
+	//속도 체크 주기 설정
+	cmmCfgSetActSpdCheck(cmTRUE, 50);
+	SetDriveWheelCount();
+
+	SetServoOnOff(LEFT_DRIVE_MOTOR, true);
+	SetServoOnOff(RIGHT_DRIVE_MOTOR, true);
+
+	cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, cmSMODE_T, 0, Acceleration, Deceleration);
+	cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, 0, Acceleration, Deceleration);
+
+	cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
+	cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
+
+	m_lLeftMotorDirection = cmDIR_P;
+	m_lRightMotorDirection = cmDIR_P;
+
+	MotionStop(false, LEFT_DRIVE_MOTOR, cmFALSE, cmFALSE);
+	MotionStop(false, RIGHT_DRIVE_MOTOR, cmFALSE, cmFALSE);
+
+	ResetPosition(LEFT_DRIVE_MOTOR);
+	ResetPosition(RIGHT_DRIVE_MOTOR);
+
+	return RETURN_NON_ERROR;
+}
+
+int CComizoaMotionController::DisconnectAct() 
+{
+
+	cmmGnDeviceUnload();
+	cmmUnloadDll();
+	m_bConnected = false;
+
+	return RETURN_NON_ERROR;
+}
+
+int CComizoaMotionController::ResetAct() 
+{
+	cmmGnDeviceReset();	
+
+	return RETURN_NON_ERROR;
+}
+
+int CComizoaMotionController::UpdateData()
+{
+	long nAxisNo = 0, nMioStates = 0;
+	cmmStGetPosition(LEFT_DRIVE_MOTOR, cmCNT_FEED, &m_dLeftEncoder);
+	cmmStGetPosition(RIGHT_DRIVE_MOTOR, cmCNT_FEED, &m_dRightEncoder);
+
+	/*
+	if(cmmStReadMioStatuses(LEFT_DRIVE_MOTOR, &nMioStates) == cmERR_NONE) {
+		if (nMioStates >> cmIOST_ALM & 0x1)
+			OccurError();
+
+	}
+	if (cmmStReadMioStatuses(RIGHT_DRIVE_MOTOR, &nMioStates) == cmERR_NONE) {
+		if (nMioStates >> cmIOST_ALM & 0x1)
+			OccurError();
+	}
+	*/
 	return RETURN_NON_ERROR;
 }
 
@@ -95,7 +132,7 @@ int CComizoaMotionController::InitDrivingMotorSpeed()
 	}
 	else
 	{
-		SetMotionSpeed(LEFT_DRIVE_MOTOR, eTrapeziodal, 0, Accel, Decel);
+		SetMotionSpeed(LEFT_DRIVE_MOTOR, eTrapeziodal, 0, Acceleration, Deceleration);
 	}
 
 	if (!isDoneMotion(RIGHT_DRIVE_MOTOR))
@@ -112,7 +149,7 @@ int CComizoaMotionController::InitDrivingMotorSpeed()
 	}
 	else
 	{
-		SetMotionSpeed(LEFT_DRIVE_MOTOR, eTrapeziodal, 0, Accel, Decel);
+		SetMotionSpeed(RIGHT_DRIVE_MOTOR, eTrapeziodal, 0, Acceleration, Deceleration);
 	}
 
 	//IO 읽어 드려서 break 반영
@@ -121,7 +158,7 @@ int CComizoaMotionController::InitDrivingMotorSpeed()
 	return RETURN_NON_ERROR;
 }
 
-
+// Getter & Setter
 int CComizoaMotionController::SetDataTimeout(int nTimeout) 
 {
 	if (nTimeout < 0)
@@ -159,40 +196,27 @@ bool CComizoaMotionController::isDoneMotion(eMotorAxis eAxis)
 	long lIsDone;
 	if (cmmSxIsDone(eAxis, &lIsDone) == cmERR_NONE)
 	{		
-		return lIsDone ? cmTRUE : cmFALSE;
+		return lIsDone == cmTRUE ? true:false;
 	}
 
 	return false;
 }
 
-int CComizoaMotionController::MotionStop(bool bEMG, eMotorAxis eAxis, bool isWaiting, bool isBlocking)
-{
-	//no : Normal Stop, true : EMG Stop
-
-	if (bEMG != true)
-	{
-		if (cmmSxStop(eAxis, isWaiting, isBlocking) != cmERR_NONE)
-		{
-			g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_MOTION_STOP_FAILED, true, false);
-			return RETURN_FAILED;
-		}		
-	}
-	else
-	{
-		if (cmmSxStopEmg(eAxis) != cmERR_NONE)
-		{
-			g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_MOTION_EMG_STOP_FAILED, true, false);
-			return RETURN_FAILED;
-		}		
-	}
-	return RETURN_NON_ERROR;
-}
-
-
 int CComizoaMotionController::SetMotionSpeed(eMotorAxis eAxis, int lSpeedMode, double dWorkSpeed, double dAccel, double dDecel)
 {
+	long ldir = 0;
+	if (eAxis == LEFT_DRIVE_MOTOR)
+	{
+		ldir = m_lLeftMotorDirection;
+		
+	}
+	else if (eAxis == RIGHT_DRIVE_MOTOR)
+	{
+		ldir = m_lRightMotorDirection;
+	}
+
 	if (cmmCfgSetSpeedPattern(eAxis, lSpeedMode, dWorkSpeed, dAccel, dDecel) != cmERR_NONE || 
-		cmmSxMove(eAxis, dWorkSpeed, TRUE) != cmERR_NONE)
+		cmmSxVMoveStart(eAxis, m_lLeftMotorDirection) != cmERR_NONE)
 	{
 		g_eventManager->PushTask(MSG_WARN, getSensorName(), WARN_INVALID_MOTION_SPEED_SETTING, true, false);
 		return RETURN_NON_ERROR;
@@ -201,35 +225,6 @@ int CComizoaMotionController::SetMotionSpeed(eMotorAxis eAxis, int lSpeedMode, d
 	return RETURN_NON_ERROR;
 }
 
-int CComizoaMotionController::InitializeFromFile()
-{
-	// szSystemDir[MAX_PATH];
-	// 윈도우즈 시스템 디렉토리명 얻어오기 (일반적으로는 C:\Windows\System32) */
-	//GetSystemDirectory((LPWSTR)szSystemDir, MAX_PATH);
-	//sprintf(szCmeFilePath, "%s\\%s", szSystemDir, CME_FILE_NAME);
-	char szCmeFilePath[MAX_PATH];
-	sprintf(szCmeFilePath, "%s", CME_FILE_NAME);
-	if (cmmGnInitFromFile(szCmeFilePath) != cmERR_NONE) 
-	{	
-		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_INITIALIZATION_FAILED, true, false);
-		return RETURN_FAILED;
-	}
-	else
-	{		
-		// CME 파일에서 정의한 축수와 실제 장착되어 있는 모션 축수를 비교확인
-		long nNumAxes_installed, nNumAxes_defined;
-		cmmAdvGetNumAvailAxes(&nNumAxes_installed); // 현재 실제로 PC 에 장착되어 있는 모션축 수
-		cmmAdvGetNumDefinedAxes(&nNumAxes_defined); // CME 파일에서 정의한 축 수(CME 파일이 지정되지 않는 경우에는 현재 장착된 축 수와 일치)
-
-		if (nNumAxes_defined != nNumAxes_defined)
-		{
-			g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_INITIALIZATION_FAILED, true, false);
-			return RETURN_FAILED;
-		}
-	}
-
-	return RETURN_NON_ERROR;
-}
 
 int CComizoaMotionController::SetMotionSpeed(int eAccelMode, double left, double right)
 {
@@ -250,48 +245,48 @@ int CComizoaMotionController::SetMotionSpeed(int eAccelMode, double left, double
 
 	if (left > 0.0)
 	{
-		if (lLeftMotorDirection == cmDIR_P)
+		if (m_lLeftMotorDirection == cmDIR_P)
 		{
 			long stat; cmmStReadMotionState(LEFT_DRIVE_MOTOR, &stat);
 			if (stat == cmMST_STOP)
 				cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);
 
-			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, left, Accel, Decel); //rpm
+			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, left, Acceleration, Deceleration); //rpm
 																					//cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
 			cmmOverrideSpeedSet(LEFT_DRIVE_MOTOR);
 		}
 		else
 		{
 			cmmSxStop(LEFT_DRIVE_MOTOR, cmFALSE, cmFALSE);
-			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, 0, Accel, Decel); //rpm
+			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, 0, Acceleration, Deceleration); //rpm
 			cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
-			lLeftMotorDirection = cmDIR_P;
+			m_lLeftMotorDirection = cmDIR_P;
 		}
 	}
 	else if (left < 0.0)
 	{
-		if (lLeftMotorDirection == cmDIR_N)
+		if (m_lLeftMotorDirection == cmDIR_N)
 		{
 			long stat; cmmStReadMotionState(LEFT_DRIVE_MOTOR, &stat);
 			if (stat == cmMST_STOP)
 				cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_N);
 
 
-			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, -left, Accel, Decel); //rpm
+			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, -left, Acceleration, Deceleration); //rpm
 																					 //cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
 			cmmOverrideSpeedSet(LEFT_DRIVE_MOTOR);
 		}
 		else
 		{
 			cmmSxStop(LEFT_DRIVE_MOTOR, cmFALSE, cmFALSE);
-			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, 0, Accel, Decel); //rpm
+			cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, eAccelMode, 0, Acceleration, Deceleration); //rpm
 			cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_N);//Positive dir V-MOVE
-			lLeftMotorDirection = cmDIR_N;
+			m_lLeftMotorDirection = cmDIR_N;
 		}
 	}
 	else
 	{
-		cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, cmSMODE_T, left, Accel, Decel); //rpm
+		cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, cmSMODE_T, left, Acceleration, Deceleration); //rpm
 																				//cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
 		cmmOverrideSpeedSet(LEFT_DRIVE_MOTOR);
 	}
@@ -299,49 +294,49 @@ int CComizoaMotionController::SetMotionSpeed(int eAccelMode, double left, double
 
 	if (right > 0.0)
 	{
-		if (lRightMotorDirection == cmDIR_P)
-		{			
-			long stat; cmmStReadMotionState(LEFT_DRIVE_MOTOR, &stat);
+		if (m_lRightMotorDirection == cmDIR_P)
+		{
+			long stat; cmmStReadMotionState(RIGHT_DRIVE_MOTOR, &stat);
 			if (stat == cmMST_STOP)
-				cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);
+				cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_P);
 
-			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, right, Accel, Decel); //rpm
-																					  //cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
+			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, eAccelMode, right, Acceleration, Deceleration); //rpm
+																								   //cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
 			cmmOverrideSpeedSet(RIGHT_DRIVE_MOTOR);
 		}
 		else
 		{
 			cmmSxStop(RIGHT_DRIVE_MOTOR, cmFALSE, cmFALSE);
-			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, 0, Accel, Decel); //rpm
+			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, eAccelMode, 0, Acceleration, Deceleration); //rpm
 			cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
-			lRightMotorDirection = cmDIR_P;
+			m_lRightMotorDirection = cmDIR_P;
 		}
 	}
 	else if (right < 0.0)
 	{
-		if (lRightMotorDirection == cmDIR_N)
+		if (m_lRightMotorDirection == cmDIR_N)
 		{
-
-			long stat; cmmStReadMotionState(LEFT_DRIVE_MOTOR, &stat);
+			long stat; cmmStReadMotionState(RIGHT_DRIVE_MOTOR, &stat);
 			if (stat == cmMST_STOP)
-				cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_N);
+				cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_N);
 
-			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, -right, Accel, Decel); //rpm
-																					   //cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
+
+			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, eAccelMode, -right, Acceleration, Deceleration); //rpm
+																									//cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
 			cmmOverrideSpeedSet(RIGHT_DRIVE_MOTOR);
 		}
 		else
 		{
 			cmmSxStop(RIGHT_DRIVE_MOTOR, cmFALSE, cmFALSE);
-			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, 0, Accel, Decel); //rpm
+			cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, eAccelMode, 0, Acceleration, Deceleration); //rpm
 			cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_N);//Positive dir V-MOVE
-			lRightMotorDirection = cmDIR_N;
+			m_lRightMotorDirection = cmDIR_N;
 		}
 	}
 	else
 	{
-		cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, right, Accel, Decel); //rpm
-																				  //cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
+		cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, right, Acceleration, Deceleration); //rpm
+																							  //cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
 		cmmOverrideSpeedSet(RIGHT_DRIVE_MOTOR);
 	}
 
@@ -391,49 +386,12 @@ int CComizoaMotionController::SetPosition(eMotorAxis eAxis, eCounterName eCounte
 	return RETURN_NON_ERROR;
 }
 
-int CComizoaMotionController::ResetPosition(eMotorAxis eAxis)
-{
-	if (cmmStSetPosition(eAxis, eCounter_Command, 0.0) !=cmERR_NONE || 
-		cmmStSetPosition(eAxis, eCounter_Feed, 0.0) != cmERR_NONE)
-	{
-		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_RESET_POSITION_FAILED, true, false);
-		return RETURN_FAILED;
-	}	
-	return RETURN_NON_ERROR;
-}
-
 int CComizoaMotionController::GetPosition(eMotorAxis eAxis, eCounterName eCounter, double dCurPos) 
 {
 	if (cmmStGetPosition(eAxis, eCounter_Command, &dCurPos) != cmERR_NONE)
 	{
 		return RETURN_FAILED;
 	}
-	return RETURN_NON_ERROR;
-}
-
-int CComizoaMotionController::InitDrivingMotor()
-{
-	InitDrivingMotorSpeed();
-
-	InitializeFromFile();	
-	
-	//속도 체크 주기 설정
-	cmmCfgSetActSpdCheck(cmTRUE, 50);
-
-	SetDriveWheelCount();
-	
-	SetServoOnOff(LEFT_DRIVE_MOTOR, true);
-	SetServoOnOff(RIGHT_DRIVE_MOTOR, true);
-
-	cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, cmSMODE_T, 0, Accel, Decel);
-	cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, cmSMODE_T, 0, Accel, Decel);
-
-	cmmSxVMoveStart(LEFT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
-	cmmSxVMoveStart(RIGHT_DRIVE_MOTOR, cmDIR_P);//Positive dir V-MOVE
-
-	lLeftMotorDirection = cmDIR_P;
-	lRightMotorDirection = cmDIR_P;
-
 	return RETURN_NON_ERROR;
 }
 
@@ -480,6 +438,70 @@ int CComizoaMotionController::SetDriveWheelCount()
 		}
 	}
 
+	return RETURN_NON_ERROR;
+}
+
+int CComizoaMotionController::MotionStop(bool bEMG, eMotorAxis eAxis, bool isWaiting, bool isBlocking)
+{
+	//no : Normal Stop, true : EMG Stop
+
+	if (bEMG != true)
+	{
+		if (cmmSxStop(eAxis, isWaiting, isBlocking) != cmERR_NONE)
+		{
+			g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_MOTION_STOP_FAILED, true, false);
+			return RETURN_FAILED;
+		}
+	}
+	else
+	{
+		if (cmmSxStopEmg(eAxis) != cmERR_NONE)
+		{
+			g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_MOTION_EMG_STOP_FAILED, true, false);
+			return RETURN_FAILED;
+		}
+	}
+	return RETURN_NON_ERROR;
+}
+
+
+int CComizoaMotionController::InitializeFromFile()
+{
+	// szSystemDir[MAX_PATH];
+	// 윈도우즈 시스템 디렉토리명 얻어오기 (일반적으로는 C:\Windows\System32) */
+	//GetSystemDirectory((LPWSTR)szSystemDir, MAX_PATH);
+	//sprintf(szCmeFilePath, "%s\\%s", szSystemDir, CME_FILE_NAME);
+	char szCmeFilePath[MAX_PATH];
+	sprintf(szCmeFilePath, "%s", CME_FILE_NAME);
+	if (cmmGnInitFromFile(szCmeFilePath) != cmERR_NONE)
+	{
+		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_INITIALIZATION_FAILED, true, false);
+		return RETURN_FAILED;
+	}
+	else
+	{
+		// CME 파일에서 정의한 축수와 실제 장착되어 있는 모션 축수를 비교확인
+		long nNumAxes_installed, nNumAxes_defined;
+		cmmAdvGetNumAvailAxes(&nNumAxes_installed); // 현재 실제로 PC 에 장착되어 있는 모션축 수
+		cmmAdvGetNumDefinedAxes(&nNumAxes_defined); // CME 파일에서 정의한 축 수(CME 파일이 지정되지 않는 경우에는 현재 장착된 축 수와 일치)
+
+		if (nNumAxes_defined != nNumAxes_defined)
+		{
+			g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_INITIALIZATION_FAILED, true, false);
+			return RETURN_FAILED;
+		}
+	}
+
+	return RETURN_NON_ERROR;
+}
+int CComizoaMotionController::ResetPosition(eMotorAxis eAxis)
+{
+	if (cmmStSetPosition(eAxis, eCounter_Command, 0.0) != cmERR_NONE ||
+		cmmStSetPosition(eAxis, eCounter_Feed, 0.0) != cmERR_NONE)
+	{
+		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_RESET_POSITION_FAILED, true, false);
+		return RETURN_FAILED;
+	}
 	return RETURN_NON_ERROR;
 }
 
@@ -705,3 +727,35 @@ int CComizoaMotionController::LiftUpDown(bool bUpside)
 
 	return RETURN_NON_ERROR;
 }
+
+int CComizoaMotionController::CheckEncodeerValue(double dInputEncoder, double *dEncoderL, double *dEncoderR)
+{
+	double dENCL = 5000000 + dInputEncoder;
+	double dENCR = -5000000 + dInputEncoder;
+
+	if (dENCL > ENCMAX)
+	{
+		dENCL = dENCL - ENCMAX;
+	}
+	else if (dENCL < -ENCMAX)
+	{
+		dENCL = dENCL + ENCMAX;
+	}
+
+	if (dENCR > ENCMAX)
+	{
+		dENCR = dENCR - ENCMAX;
+	}
+	else if (dENCR < -ENCMAX)
+	{
+		dENCR = dENCR + ENCMAX;
+	}
+
+	*dEncoderL = dENCL;
+	*dEncoderR = dENCR;
+
+	return 0;
+}
+
+double CComizoaMotionController::getLeftEncoder() { return m_dLeftEncoder; }
+double CComizoaMotionController::getRightEncoder() {return m_dRightEncoder;}

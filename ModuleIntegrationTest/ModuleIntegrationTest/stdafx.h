@@ -7,6 +7,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _SCL_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define PI 3.14159265
 #ifndef VC_EXTRALEAN
 #define VC_EXTRALEAN            // 거의 사용되지 않는 내용은 Windows 헤더에서 제외합니다.
 #endif
@@ -35,11 +36,6 @@
 
 #include <afxcontrolbars.h>     // MFC의 리본 및 컨트롤 막대 지원
 
-
-#include "eventmanager\EventManager.h"
-#include "sensor\SensorData.h"
-
-
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -50,5 +46,22 @@
 #endif
 #endif
 
+
+#include "eventmanager\EventManager.h"
+#include "sensor\SensorData.h"
+
+
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(p) {if (p) { delete p; p=NULL;} }
+#endif
+#ifndef SAFE_DELETEA
+#define SAFE_DELETEA(p) {if (p) { delete[] p; p=NULL;} }
+#endif
+
+enum eReturnCode {
+	RETURN_NON_ERROR = 0,
+	RETURN_DATA_CHECK_FAILED,
+	RETURN_FAILED,
+};
+
 extern eventManager::CEventManager *g_eventManager;
-extern void Wait(DWORD dwMilliSecond);

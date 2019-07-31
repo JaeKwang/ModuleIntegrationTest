@@ -9,7 +9,8 @@
 
 #include "sensor\SICKLaserScanner.h"
 #include "sensor\SICKGuide.h"
-#include "Sensor\GyroSensor.h"
+#include "sensor\GyroSensor.h"
+#include "sensor\ComizoaMotionController.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -18,6 +19,8 @@
 using namespace sensor;
 using namespace eventManager;
 using namespace IO_List;
+using namespace robot;
+
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
 
 class CAboutDlg : public CDialogEx
@@ -111,6 +114,17 @@ void CModuleIntegrationTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST3, m_listEventManager);
 	DDX_Control(pDX, IDC_CHECK_LASER2_UPSIDEDOWN, m_checkLaser2UpsideDown);
 	DDX_Control(pDX, IDC_CHECK_LASER1_UPSIDEDOWN, m_checkLaser1UpsideDown);
+	DDX_Control(pDX, IDC_EDIT_MOTION_SPEED, m_editMotionSpeed);
+	DDX_Control(pDX, IDC_EDIT_MOTION_ACCEL, m_editMotionAccel);
+	DDX_Control(pDX, IDC_EDIT_MOTION_DECEL, m_editMotionDecel);
+	DDX_Control(pDX, IDC_EDIT_MOTION_STATE, m_editMotionState);
+	DDX_Control(pDX, IDC_STATIC_MOTION_POS, m_editMotionData);
+	DDX_Control(pDX, IDC_EDIT23, m_editObstacle);
+	DDX_Control(pDX, IDC_EDIT22, m_editRotation);
+	DDX_Control(pDX, IDC_EDIT21, m_editDrive);
+	DDX_Control(pDX, IDC_EDIT_CUR_ROTATE, m_editCurRotate);
+	DDX_Control(pDX, IDC_EDIT_CUR_DRIVE, m_editCurDrive);
+	DDX_Control(pDX, IDC_EDIT_AMR_MAIN_STATE, m_editAMRState);
 }
 
 BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
@@ -137,6 +151,18 @@ BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_LASER2_CANCEL, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Cancel)
 	ON_BN_CLICKED(IDC_BUTTON_LASER1_APPLY, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser1Apply)
 	ON_BN_CLICKED(IDC_BUTTON_LASER2_APPLY, &CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Apply)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_CONNECT, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionConnect)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_RESET, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionReset)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_APPLY, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionApply)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_CANCEL, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionCancel)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_MOVE, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionMove)
+	ON_BN_CLICKED(IDC_BUTTON_OBSTACLE, &CModuleIntegrationTestDlg::OnBnClickedButtonObstacle)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_SERVO_ON, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionServoOn)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_SERVO_OFF, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionServoOff)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_ESTOP, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionEstop)
+	ON_BN_CLICKED(IDC_BUTTON_MOTION_STOP, &CModuleIntegrationTestDlg::OnBnClickedButtonMotionStop)
+	ON_BN_CLICKED(IDC_BUTTON_DRIVE, &CModuleIntegrationTestDlg::OnBnClickedButtonDrive)
+	ON_BN_CLICKED(IDC_BUTTON_ROTATE, &CModuleIntegrationTestDlg::OnBnClickedButtonRotate)
 END_MESSAGE_MAP()
 
 
@@ -174,16 +200,18 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 	g_eventManager->PushTask(MSG_INFO, "", INFO_PROGRAM_START, true, false);
 
+	m_AMRController = new CAMRController();
+	
 	// LMS 2, Gyro 1, Cancard 1, Motion 1, ComizoaIO 1
 	m_sensor = new CSensorModule *[5];
-	m_sensor[0] = new CSICKLaserScanner("LMS_Front", TiMxxx, "192.168.1.161", 2111, false);
-	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", TiMxxx, "192.168.1.160", 2111, false);
-	m_sensor[2] = new CSICKGuide("Guide", 3, 125, 100, 2);
+	m_AMRController->getSensor(0, &m_sensor[0]);
+	m_AMRController->getSensor(1, &m_sensor[1]);
+	m_sensor[2] = new CSICKGuide("Guide", 1, 125, 100, 2);
 	((CSICKGuide*)m_sensor[2])->setDeviceID(0, 0x18a);
 	((CSICKGuide*)m_sensor[2])->setDeviceID(1, 0x18b);
 	m_sensor[3] = new CGyroSensor("Gyro", 5, 38400);
-
-	m_IOHub = new CIOHub("./inifiles/SAMSUNG_AMR_IO_List.ini");
+	m_sensor[4] = new CComizoaMotionController("Motion");
+	m_AMRController->getIOHub(&m_IOHub);
 	
 	UpdateUI();
 
@@ -195,11 +223,13 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 void CModuleIntegrationTestDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-
-	for (int i = 0; i < 4; i++)
-		delete m_sensor[i];
-	delete m_IOHub;
+	SAFE_DELETE(m_sensor[2]);
+	SAFE_DELETE(m_sensor[3]);
+	SAFE_DELETE(m_sensor[4]);
+	SAFE_DELETE(m_AMRController);
 	g_eventManager->PushTask(MSG_INFO, "", INFO_PROGRAM_TERMINATED, true, false);
+	SAFE_DELETE(g_eventManager);
+	SAFE_DELETEA(m_sensor);
 }
 
 void CModuleIntegrationTestDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -289,7 +319,34 @@ void CModuleIntegrationTestDlg::OnTimer(UINT_PTR nIDEvent)
 		UIComizoaDataUpdate();
 		UIGuideDataUpdate();
 		UIGyroDataUpdate();
+		UIMotionUpdate();
 		UIEventManagerUpdate();
+
+
+		switch (m_AMRController->getState()) {
+		case STATE_AMR_INIT:
+			m_editAMRState.SetWindowTextW(_T("AMR needs to initialize"));
+			break;
+		case STATE_AMR_PROGRESSING:
+			m_editAMRState.SetWindowTextW(_T("AMR is initializing"));
+			break;
+		case STATE_AMR_RUN:
+			m_editAMRState.SetWindowTextW(_T("ready to run"));
+			break;
+		case STATE_AMR_ERROR_SENSOR_STATE:
+			m_editAMRState.SetWindowTextW(_T("Sensor is Error"));
+			break;
+		case STATE_AMR_ERROR_EMERGENCY:
+			m_editAMRState.SetWindowTextW(_T("Emergency Stop"));
+			break;
+		case STATE_AMR_ERROR_CRASH:
+			m_editAMRState.SetWindowTextW(_T("AMR is crashed"));
+			break;
+		case STATE_AMR_ERROR_OBSTACLE:
+			m_editAMRState.SetWindowTextW(_T("Obstacle is detected"));
+			break;
+		}
+
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -423,6 +480,16 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_editGyroYaw.SetWindowText(_T("-"));
 	m_editGyroPitch.SetWindowText(_T("-"));
 	m_editGyroRoll.SetWindowText(_T("-"));
+
+	// Motion
+	m_editMotionSpeed.SetWindowText(_T("10"));
+	m_editMotionAccel.SetWindowText(_T("1000"));
+	m_editMotionDecel.SetWindowText(_T("1000"));
+
+	// Operation
+	m_editObstacle.SetWindowText(_T("0"));
+	m_editDrive.SetWindowText(_T("0"));
+	m_editRotation.SetWindowText(_T("0"));
 }
 
 
@@ -606,7 +673,27 @@ void CModuleIntegrationTestDlg::UIGyroDataUpdate() {
 	}
 }
 
-
+void CModuleIntegrationTestDlg::UIMotionUpdate() {
+	switch (m_sensor[4]->getStatus())
+	{
+	case STATE_INIT:
+		m_editMotionState.SetWindowTextW(_T("Init"));
+		break;
+	case STATE_PROGRESSING:
+		m_editMotionState.SetWindowTextW(_T("Progress"));
+		break;
+	case STATE_RUN:
+		m_editMotionState.SetWindowTextW(_T("Run"));
+		break;
+	case STATE_ERROR:
+		m_editMotionState.SetWindowTextW(_T("Error"));
+		break;
+	}
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	double left = motion->getLeftEncoder();
+	double right = motion->getRightEncoder();
+	m_editMotionData.SetWindowText(CA2T((to_string(motion->getLeftEncoder()) + ", "+ to_string(motion->getRightEncoder())).c_str()));
+}
 void CModuleIntegrationTestDlg::UIEventManagerUpdate() {
 	m_listEventManager.ResetContent();
 	vector<vector<CEventNode>> list = g_eventManager->getErrorArrayList();
@@ -871,4 +958,156 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonLaser2Apply()
 	lms->setUpsideDown(m_checkLaser2UpsideDown.GetCheck());
 
 	UpdateUI();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionConnect()
+{
+	m_sensor[4]->Connect();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionReset()
+{
+	m_sensor[4]->Reset();
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionApply()
+{
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+
+}
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionCancel()
+{
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	//m_editMotionSpeed.SetWindowText(CA2T(std::to_string(motion->get()).c_str()));
+	//m_editMotionAccel.SetWindowText(CA2T(std::to_string(motion->get()).c_str()));
+	//m_editMotionDecel.SetWindowText(CA2T(std::to_string(motion->getEndAngle()).c_str()));
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionMove()
+{
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	int iAccPattern;
+	double dSpeed = 0;
+	double dGearRatio = 1.0;
+	double dWheelRadius = 125;
+	double dEncoderResolution = 6000;
+	double dPulse[3] = { 0.0 };
+	long lAxis[2] = { 0L };
+	double dDistList[2] = { 0.0 };
+
+	CString strSpeed, strPattern, strAccel, strDecel, strDistance;
+	m_editMotionSpeed.GetWindowTextW(strSpeed);// pulse/sec
+
+	m_editMotionAccel.GetWindowTextW(strAccel);
+	m_editMotionDecel.GetWindowTextW(strDecel);
+
+	motion->SetServoOnOff(LEFT_DRIVE_MOTOR, true);
+	motion->SetServoOnOff(RIGHT_DRIVE_MOTOR, true);
+	//cmmCfgSetSpeedPattern(LEFT_DRIVE_MOTOR, iAccPattern - 1, _ttof(strSpeed), _ttof(strAccel), _ttof(strDecel));
+	//cmmCfgSetSpeedPattern(RIGHT_DRIVE_MOTOR, iAccPattern - 1, _ttof(strSpeed), _ttof(strAccel), _ttof(strDecel));
+
+	motion->SetMotionSpeed(cmSMODE_C, _ttof(strSpeed), _ttof(strSpeed));
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonObstacle()
+{
+	CString str;
+	m_editObstacle.GetWindowTextW(str);
+	m_AMRController->setObstacleRange(_ttoi(str));
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionServoOn()
+{
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	motion->SetServoOnOff(LEFT_DRIVE_MOTOR, true);
+	motion->SetServoOnOff(RIGHT_DRIVE_MOTOR, true);
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionServoOff()
+{
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	motion->SetServoOnOff(LEFT_DRIVE_MOTOR, false);
+	motion->SetServoOnOff(RIGHT_DRIVE_MOTOR, false);
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionEstop()
+{
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	motion->MotionStop(true, LEFT_DRIVE_MOTOR, cmFALSE, cmFALSE);
+	motion->MotionStop(true, RIGHT_DRIVE_MOTOR, cmFALSE, cmFALSE);
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonMotionStop()
+{
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	motion->MotionStop(false, LEFT_DRIVE_MOTOR, cmFALSE, cmFALSE);
+	motion->MotionStop(false, RIGHT_DRIVE_MOTOR, cmFALSE, cmFALSE);
+}
+
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonDrive()
+{
+	double dGearRatio = 1.0;
+	double dWheelRadius = 125;
+	double dEncoderResolution = 6000;
+
+	CString dist;
+	m_editDrive.GetWindowTextW(dist);
+	
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	motion->ResetPosition(LEFT_DRIVE_MOTOR);
+	motion->ResetPosition(RIGHT_DRIVE_MOTOR);
+	int pulse = (_ttof(dist) * dGearRatio * dEncoderResolution) / (2 * PI * dWheelRadius);
+	bool dir = pulse > 0 ? true : false;
+	
+	CString strSpeed, strPattern, strAccel, strDecel, strDistance;
+	m_editMotionSpeed.GetWindowTextW(strSpeed);// pulse/sec
+	if (dir)
+		motion->SetMotionSpeed(cmSMODE_C, _ttof(strSpeed), _ttof(strSpeed));
+	else
+		motion->SetMotionSpeed(cmSMODE_C, -_ttof(strSpeed), -_ttof(strSpeed));
+
+	while (true) {
+		if (dir) {
+			if (motion->getLeftEncoder() > pulse || motion->getRightEncoder() < -pulse) {
+				motion->MotionStop(true, LEFT_DRIVE_MOTOR, 0, 0);
+				motion->MotionStop(true, RIGHT_DRIVE_MOTOR, 0, 0);
+				break;
+			}
+		}
+		else {
+			if (motion->getLeftEncoder() < pulse || motion->getRightEncoder() > -pulse) {
+				motion->MotionStop(true, LEFT_DRIVE_MOTOR, 0, 0);
+				motion->MotionStop(true, RIGHT_DRIVE_MOTOR, 0, 0);
+				break;
+			}
+		}
+	}
+}
+
+
+void CModuleIntegrationTestDlg::OnBnClickedButtonRotate()
+{
+	CString angle, strSpeed;
+	m_editRotation.GetWindowTextW(angle);
+	m_editMotionSpeed.GetWindowTextW(strSpeed);
+
+	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+	if (_ttof(strSpeed) > 0) {
+		motion->SetMotionSpeed(cmSMODE_C, -_ttof(strSpeed), _ttof(strSpeed));
+	}
+	else {
+		motion->SetMotionSpeed(cmSMODE_C, _ttof(strSpeed), -_ttof(strSpeed));
+	}
 }

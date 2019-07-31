@@ -1,10 +1,10 @@
 #pragma once
 
 typedef struct _LaserScanData {
-	int start_angle = 0;
-	int end_angle = 0;
-
-	int data_len = 0;
+	int nAngleResolution = 0;
+	int nStart_angle = 0;
+	int nEnd_angle = 0;
+	int nData_len = 0;
 
 	UINT16 *dist;
 	UINT16 *rssi;

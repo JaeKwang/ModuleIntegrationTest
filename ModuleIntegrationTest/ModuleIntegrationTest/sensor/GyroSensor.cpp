@@ -20,6 +20,7 @@ CGyroSensor::~CGyroSensor()
 {
 	Disconnect();
 	while (getStatus() != STATE_INIT);
+	SAFE_DELETE(m_Serial);
 }
 
 bool CGyroSensor::Initialize()
@@ -333,7 +334,6 @@ int CGyroSensor::ResetAct()
 	m_bValueInitialized = false;
 	m_Serial->clearport();
 
-	Wait(100);
 	return RETURN_NON_ERROR;
 }
 

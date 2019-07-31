@@ -26,12 +26,14 @@ CEventManager::CEventManager()
 CEventManager::~CEventManager()
 {
 	clearError();
+	Terminate();
+	SAFE_DELETE(m_pINIReaderWriter);
 }
 
 int CEventManager::PushTask(eMessageType m, string t, eEventCode e, bool bFileSave, bool bSendACS)
 {
 	CEventNode *task = new CEventNode(m, t, e, bFileSave, bSendACS);
-
+	eEventCode ret = task->m_eventCode;
 	m_cs.Lock();
 	m_tasks.push(task);
 	// thread start
@@ -42,8 +44,7 @@ int CEventManager::PushTask(eMessageType m, string t, eEventCode e, bool bFileSa
 	}
 	m_cs.Unlock();
 	m_sema.Signal();
-	if (task == NULL) return 0;
-	return task->m_eventCode;
+	return ret;
 }
 
 
@@ -109,7 +110,7 @@ int CEventManager::ThreadFunction(CEventManager *mng)
 			WriteLog(task->m_MsgType, "%s: %s", task->m_eventTarget.c_str(), mng->m_EventCodeTable[task->m_eventCode].c_str());
 		if (task->m_MsgType == MSG_ERROR)
 			mng->pushList(task);
-		delete task;
+		SAFE_DELETE(task);
 	}
 	return 0;
 }
