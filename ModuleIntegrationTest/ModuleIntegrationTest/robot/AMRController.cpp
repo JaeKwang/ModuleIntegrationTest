@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "robot\AMRController.h"
 #include "sensor\SICKLaserScanner.h"
+#include "sensor\GyroSensor.h"
+#include "sensor\SICKGuide.h"
 
 using namespace eventManager;
 using namespace robot;
@@ -9,11 +11,15 @@ using namespace std;
 
 CAMRController::CAMRController(){
 	// Sensor
-	m_nNumOfSensor = 2;
-	m_nNumOfLaserScanner = 2;
-	m_sensor = new CSensorModule *[m_nNumOfLaserScanner];
+	m_nNumOfSensor = 4;
+	m_sensor = new CSensorModule *[m_nNumOfSensor];
 	m_sensor[0] = new CSICKLaserScanner("LMS_Front", LMS1xx, "192.168.1.160", 2111, false);
 	m_sensor[1] = new CSICKLaserScanner("LMS_Rear", LMS1xx, "192.168.1.161", 2111, false);
+	m_sensor[2] = new CSICKGuide("Guide", 1, 125, 100, 2);
+	((CSICKGuide*)m_sensor[2])->setDeviceID(0, 0x18a);
+	((CSICKGuide*)m_sensor[2])->setDeviceID(1, 0x18b);
+	m_sensor[3] = new CGyroSensor("Gyro", 5, 38400);
+
 	m_IOHub = new CIOHub("./inifiles/CJ_AMR_IO_List.ini");
 
 	// Obstacle Checker
@@ -164,6 +170,8 @@ int CAMRController::ThreadFunctionAMRControl(CAMRController * controller) {
 			continue;
 		}
 
+
+
 		// Keep the Thread Period
 		runtime = clock() - start;
 		if (controller->m_nThreadPeriod - runtime > 0)
@@ -179,7 +187,7 @@ void CAMRController::setObstacleRange(int nRange) {
 }
 
 int CAMRController::getSensor(int index, CSensorModule** sensor) {
-	if (index < 0 || index > m_nNumOfLaserScanner)
+	if (index < 0 || index > m_nNumOfSensor)
 		return RETURN_FAILED;
 	*sensor = m_sensor[index];
 	return RETURN_NON_ERROR;

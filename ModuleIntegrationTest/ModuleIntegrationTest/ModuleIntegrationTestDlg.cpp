@@ -125,6 +125,10 @@ void CModuleIntegrationTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_CUR_ROTATE, m_editCurRotate);
 	DDX_Control(pDX, IDC_EDIT_CUR_DRIVE, m_editCurDrive);
 	DDX_Control(pDX, IDC_EDIT_AMR_MAIN_STATE, m_editAMRState);
+	DDX_Control(pDX, IDC_EDIT43, m_editMotionLift2);
+	DDX_Control(pDX, IDC_EDIT33, m_editMotionLeft);
+	DDX_Control(pDX, IDC_EDIT41, m_editMotionRight);
+	DDX_Control(pDX, IDC_EDIT42, m_editMotionLift1);
 }
 
 BEGIN_MESSAGE_MAP(CModuleIntegrationTestDlg, CDialogEx)
@@ -206,10 +210,9 @@ BOOL CModuleIntegrationTestDlg::OnInitDialog()
 	m_sensor = new CSensorModule *[5];
 	m_AMRController->getSensor(0, &m_sensor[0]);
 	m_AMRController->getSensor(1, &m_sensor[1]);
-	m_sensor[2] = new CSICKGuide("Guide", 1, 125, 100, 2);
-	((CSICKGuide*)m_sensor[2])->setDeviceID(0, 0x18a);
-	((CSICKGuide*)m_sensor[2])->setDeviceID(1, 0x18b);
-	m_sensor[3] = new CGyroSensor("Gyro", 5, 38400);
+	m_AMRController->getSensor(2, &m_sensor[2]);
+	m_AMRController->getSensor(3, &m_sensor[3]);
+	
 	m_sensor[4] = new CComizoaMotionController("Motion");
 	m_AMRController->getIOHub(&m_IOHub);
 	
@@ -485,6 +488,7 @@ void CModuleIntegrationTestDlg::UpdateUI() {
 	m_editMotionSpeed.SetWindowText(_T("10"));
 	m_editMotionAccel.SetWindowText(_T("1000"));
 	m_editMotionDecel.SetWindowText(_T("1000"));
+	m_editMotionData.SetWindowText(_T("0, 0"));
 
 	// Operation
 	m_editObstacle.SetWindowText(_T("0"));
@@ -689,10 +693,16 @@ void CModuleIntegrationTestDlg::UIMotionUpdate() {
 		m_editMotionState.SetWindowTextW(_T("Error"));
 		break;
 	}
-	CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
-	double left = motion->getLeftEncoder();
-	double right = motion->getRightEncoder();
-	m_editMotionData.SetWindowText(CA2T((to_string(motion->getLeftEncoder()) + ", "+ to_string(motion->getRightEncoder())).c_str()));
+	
+	if (m_sensor[4]->getStatus() == STATE_RUN) 
+	{
+		CComizoaMotionController* motion = dynamic_cast<CComizoaMotionController*>(m_sensor[4]);
+		m_editMotionData.SetWindowText(CA2T((to_string((int)motion->getEncoder(LEFT_DRIVE_MOTOR)) + ", " + to_string((int)motion->getEncoder(RIGHT_DRIVE_MOTOR))).c_str()));
+		m_editMotionLeft.SetWindowText(CA2T(("Speed:" + std::to_string((int)motion->getSpeed(LEFT_DRIVE_MOTOR)) + "\nAcc:" + std::to_string((int)motion->getAccel(LEFT_DRIVE_MOTOR)) + "\nDecel" + std::to_string((int)motion->getDecel(LEFT_DRIVE_MOTOR))).c_str()));
+		m_editMotionRight.SetWindowText(CA2T(("Speed:" + std::to_string((int)motion->getSpeed(RIGHT_DRIVE_MOTOR)) + "\nAcc:" + std::to_string((int)motion->getAccel(RIGHT_DRIVE_MOTOR)) + "\nDecel" + std::to_string((int)motion->getDecel(RIGHT_DRIVE_MOTOR))).c_str()));
+		m_editMotionLift1.SetWindowText(CA2T(("Speed:" + std::to_string((int)motion->getSpeed(REV_LIFT_MOTOR)) + "\nAcc:" + std::to_string((int)motion->getAccel(REV_LIFT_MOTOR)) + "\nDecel" + std::to_string((int)motion->getDecel(REV_LIFT_MOTOR))).c_str()));
+		m_editMotionLift2.SetWindowText(CA2T(("Speed:" + std::to_string((int)motion->getSpeed(FWD_LIFT_MOTOR)) + "\nAcc:" + std::to_string((int)motion->getAccel(FWD_LIFT_MOTOR)) + "\nDecel" + std::to_string((int)motion->getDecel(FWD_LIFT_MOTOR))).c_str()));
+	}
 }
 void CModuleIntegrationTestDlg::UIEventManagerUpdate() {
 	m_listEventManager.ResetContent();
@@ -1080,14 +1090,14 @@ void CModuleIntegrationTestDlg::OnBnClickedButtonDrive()
 
 	while (true) {
 		if (dir) {
-			if (motion->getLeftEncoder() > pulse || motion->getRightEncoder() < -pulse) {
+			if (motion->getEncoder(LEFT_DRIVE_MOTOR) > pulse || motion->getEncoder(RIGHT_DRIVE_MOTOR) < -pulse) {
 				motion->MotionStop(true, LEFT_DRIVE_MOTOR, 0, 0);
 				motion->MotionStop(true, RIGHT_DRIVE_MOTOR, 0, 0);
 				break;
 			}
 		}
 		else {
-			if (motion->getLeftEncoder() < pulse || motion->getRightEncoder() > -pulse) {
+			if (motion->getEncoder(LEFT_DRIVE_MOTOR) < pulse || motion->getEncoder(RIGHT_DRIVE_MOTOR) > -pulse) {
 				motion->MotionStop(true, LEFT_DRIVE_MOTOR, 0, 0);
 				motion->MotionStop(true, RIGHT_DRIVE_MOTOR, 0, 0);
 				break;

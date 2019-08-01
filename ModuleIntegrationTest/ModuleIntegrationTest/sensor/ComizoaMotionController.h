@@ -44,17 +44,19 @@ namespace sensor
 		int ResetAct() override;
 		int UpdateData() override;
 		int DisconnectAct() override;
+		
+		long m_nNumAxes;
 
-		double m_dRightEncoder;
-		double m_dLeftEncoder;
-		double m_dRightTarget;
-		double m_dLeftTarget;
+		double * m_dEncoder;
+		double * m_dSpeed;
+		double * m_dAccel;
+		double * m_dDecel;
+
 
 	public:
 		CComizoaMotionController(std::string);
 		~CComizoaMotionController();
 		
-		int Initialize();
 		bool m_bConnected;
 		int SetDataTimeout(int nTimeout);
 		int SetConnectionTimeout(int nTimeout);
@@ -98,9 +100,9 @@ namespace sensor
 		double m_dGyroTargetAngle;
 		
 		// Getter & Setter
-		void setRightTarget(double);
-		void setLeftTarget(double);
-		double getLeftEncoder();
-		double getRightEncoder();
+		double getEncoder(long Axis);
+		double getSpeed(long Axis);
+		double getAccel(long Axis);
+		double getDecel(long Axis);
 	};
 }

@@ -141,4 +141,8 @@ public:
 	afx_msg void OnBnClickedButtonMotionStop();
 	afx_msg void OnBnClickedButtonDrive();
 	afx_msg void OnBnClickedButtonRotate();
+	CEdit m_editMotionLift2;
+	CEdit m_editMotionLeft;
+	CEdit m_editMotionRight;
+	CEdit m_editMotionLift1;
 };

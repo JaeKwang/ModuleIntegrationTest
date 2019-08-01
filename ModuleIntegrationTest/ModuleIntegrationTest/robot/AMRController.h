@@ -24,7 +24,6 @@ namespace robot
 		int m_nNumOfSensor;
 		sensor::CSensorModule ** m_sensor;
 		sensor::CIOHub * m_IOHub;
-		int m_nNumOfLaserScanner;
 		int m_nObstacle;
 		int m_nThreadPeriod;
 

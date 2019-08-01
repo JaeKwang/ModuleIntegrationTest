@@ -42,7 +42,7 @@ int CObstacleChecker::ObjectDetect(LaserScanData data, int * X, int * Y)
 		double dWordTheta = m_nTheta + data.nStart_angle + (i / data.nAngleResolution) + (1./ data.nAngleResolution)*(i%data.nAngleResolution);
 		int nX = data.dist[i] * cos(dWordTheta*dDeg3Rad);
 		int nY = data.dist[i] * sin(dWordTheta*dDeg3Rad);
-
+		TRACE("degree: %f, nX: %d, nY: %d\n", data.nStart_angle, nX, nY);
 		if (m_nObstacleFront > data.dist[i] && data.dist[i] > 5){
 			*X = nX + m_nXPos;
 			*Y = nY + m_nYPos;

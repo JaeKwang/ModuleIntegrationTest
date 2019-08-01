@@ -15,38 +15,43 @@ CComizoaMotionController::CComizoaMotionController(string name):CSensorModule(na
 	m_dLiftDownLimit = 0.0;
 	m_bConnected = false;
 	m_dGyroTargetAngle = 0.0;
+
+	if (cmmLoadDll() != TRUE) //DLL을 로드합니다.
+	{
+		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LOADING_LIBRARY_FAILED, true, false);
+		return;
+	}
+
+	//디바이스를 로드 합니다.
+	if (cmmGnDeviceLoad(cmTRUE, &m_nNumAxes) != cmERR_NONE)
+	{
+		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LOADING_DEVICE_FAILED, true, false);
+		return;
+	}
+
+	m_dEncoder = new double[m_nNumAxes];
+	m_dSpeed = new double[m_nNumAxes];
+	m_dAccel = new double[m_nNumAxes];
+	m_dDecel = new double[m_nNumAxes];
+
 }
 
 CComizoaMotionController::~CComizoaMotionController() 
 {
-	MotionStop(true, LEFT_DRIVE_MOTOR, 0, 0);
-	MotionStop(true, RIGHT_DRIVE_MOTOR, 0, 0);
+	if (m_bConnected)
+	{
+		MotionStop(true, LEFT_DRIVE_MOTOR, 0, 0);
+		MotionStop(true, RIGHT_DRIVE_MOTOR, 0, 0);
+	}
 	Disconnect();
 	while (getStatus() != STATE_INIT);
+	SAFE_DELETE(m_dDecel);
+	SAFE_DELETE(m_dAccel);
+	SAFE_DELETE(m_dSpeed);
+	SAFE_DELETE(m_dEncoder);
 }
 
 int CComizoaMotionController::ConnectAct() 
-{
-	long nNumAxes;
-	
-	if (cmmLoadDll() != TRUE) //DLL을 로드합니다.
-	{
-		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LOADING_LIBRARY_FAILED, true, false);
-		return RETURN_FAILED;
-	}
-
-	//디바이스를 로드 합니다.
-	if (cmmGnDeviceLoad(cmTRUE, &nNumAxes) != cmERR_NONE)
-	{		
-		g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LOADING_DEVICE_FAILED, true, false);
-		return RETURN_FAILED;
-	}
-
-	m_bConnected = true;
-	return Initialize();
-}
-
-int CComizoaMotionController::Initialize()
 {
 	if (InitDrivingMotorSpeed() != RETURN_NON_ERROR)
 		return RETURN_FAILED;
@@ -76,6 +81,7 @@ int CComizoaMotionController::Initialize()
 	ResetPosition(LEFT_DRIVE_MOTOR);
 	ResetPosition(RIGHT_DRIVE_MOTOR);
 
+	m_bConnected = true;
 	return RETURN_NON_ERROR;
 }
 
@@ -98,10 +104,18 @@ int CComizoaMotionController::ResetAct()
 
 int CComizoaMotionController::UpdateData()
 {
-	long nAxisNo = 0, nMioStates = 0;
-	cmmStGetPosition(LEFT_DRIVE_MOTOR, cmCNT_FEED, &m_dLeftEncoder);
-	cmmStGetPosition(RIGHT_DRIVE_MOTOR, cmCNT_FEED, &m_dRightEncoder);
+	
+	for (int i = 0; i < m_nNumAxes; i++) {
+		// Get Encoder
+		cmmStGetPosition(i, cmCNT_FEED, &m_dEncoder[i]);
 
+		// Get Speed Model
+		long mode;
+		cmmCfgGetSpeedPattern(i, &mode, &m_dSpeed[i], &m_dAccel[i], &m_dDecel[i]);
+
+	}
+
+	
 	/*
 	if(cmmStReadMioStatuses(LEFT_DRIVE_MOTOR, &nMioStates) == cmERR_NONE) {
 		if (nMioStates >> cmIOST_ALM & 0x1)
@@ -757,5 +771,7 @@ int CComizoaMotionController::CheckEncodeerValue(double dInputEncoder, double *d
 	return 0;
 }
 
-double CComizoaMotionController::getLeftEncoder() { return m_dLeftEncoder; }
-double CComizoaMotionController::getRightEncoder() {return m_dRightEncoder;}
+double CComizoaMotionController::getEncoder(long Axis) { return m_dEncoder[Axis]; }
+double CComizoaMotionController::getSpeed(long Axis) { return m_dSpeed[Axis]; }
+double CComizoaMotionController::getAccel(long Axis) { return m_dAccel[Axis]; }
+double CComizoaMotionController::getDecel(long Axis) { return m_dDecel[Axis]; }
