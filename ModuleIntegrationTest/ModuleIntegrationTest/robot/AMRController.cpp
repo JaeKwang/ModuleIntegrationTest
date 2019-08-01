@@ -45,7 +45,7 @@ CAMRController::~CAMRController() {
 	// Memory delete
 	SAFE_DELETE(m_obstacleChecker);
 	SAFE_DELETE(m_IOHub);
-	for (int i = 0; i < m_nNumOfSensor; i++)
+	for (int i = m_nNumOfSensor-1; i > 0; i--)
 		SAFE_DELETE(m_sensor[i]);
 }
 

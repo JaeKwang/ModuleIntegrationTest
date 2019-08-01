@@ -32,7 +32,8 @@ CSICKGuide::CSICKGuide(string name, int nPort, int nBaudrate_k, int nTimeOut_ms,
 	}
 }
 CSICKGuide::~CSICKGuide() {
-	DisconnectAct();
+	Disconnect();
+	while (getStatus() != STATE_INIT);
 	SAFE_DELETE(guide_reading_code);
 	SAFE_DELETE(guide_line_good);
 	SAFE_DELETE(guide_linelev);
@@ -44,8 +45,7 @@ CSICKGuide::~CSICKGuide() {
 	SAFE_DELETE(guide_lcp2);
 	SAFE_DELETE(guide_lcp1);
 	SAFE_DELETE(m_lDeviceID);
-	for(int i = 0; i < m_nDeviceNum; i++)
-		SAFE_DELETE(cReadData_8Byte_One[i]);
+	SAFE_DELETEA(cReadData_8Byte_One);
 }
 int CSICKGuide::ConnectAct() {
 	if (m_nPort == -1 || m_nBaudrate_k == -1)

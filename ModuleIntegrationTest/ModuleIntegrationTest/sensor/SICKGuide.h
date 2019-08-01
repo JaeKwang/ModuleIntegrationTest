@@ -3,7 +3,7 @@
 #include "afxwin.h"
 #include <iostream>
 #include <afxmt.h>
-#include"winioctl.h"
+#include "winioctl.h"
 #include "sensor\SensorModule.h"
 
 namespace sensor {

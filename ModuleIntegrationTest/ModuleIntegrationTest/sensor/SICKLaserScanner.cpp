@@ -91,32 +91,41 @@ int CSICKLaserScanner::DisconnectAct() {
 // Getter & Setter
 int CSICKLaserScanner::getData(LaserScanData * scandata) {
 	// Switching Double Buffer
+	
+	/*
 	if (m_bBufferSwitch)
 		memcpy(scandata, &m_bufferA, sizeof(m_bufferA));
-	else 
+	else
 		memcpy(scandata, &m_bufferB, sizeof(m_bufferB));
-	/*
-	if (m_bBufferSwitch) {
-		scandata = new LaserScanData();
-		scandata->data_len = getResolDeg()*(m_bufferA.end_angle - m_bufferA.start_angle);
-		scandata->dist = new UINT16[scandata->data_len];
-		scandata->rssi = new UINT16[scandata->data_len];
-		for (int i = 0; i < scandata->data_len; i++) {
-			scandata->dist[i] = m_bufferA.dist[int(getResolDeg()*(m_bufferA.start_angle) + i)];
-			scandata->rssi[i] = m_bufferA.rssi[int(getResolDeg()*(m_bufferA.start_angle) + i)];
-		}
-	}
-	else {
-		scandata = new LaserScanData();
-		scandata->data_len = getResolDeg()*(m_bufferB.end_angle - m_bufferB.start_angle);
-		scandata->dist = new UINT16[scandata->data_len];
-		scandata->rssi = new UINT16[scandata->data_len];
-		for (int i = 0; i < scandata->data_len; i++) {
-			scandata->dist[i] = m_bufferB.dist[int(getResolDeg()*(m_bufferB.start_angle) + i)];
-			scandata->rssi[i] = m_bufferB.rssi[int(getResolDeg()*(m_bufferB.start_angle) + i)];
-		}
-	}
 	*/
+
+	LaserScanData temp;
+	temp.nData_len = getAngleResolution()*(getEndAngle() - getStartAngle());
+	temp.dist = new UINT16[temp.nData_len];
+	temp.rssi = new UINT16[temp.nData_len];
+
+	if (m_bBufferSwitch)
+	{
+		for (int i = 0; i < temp.nData_len; i++) {
+			int index = (getStartAngle() - m_bufferA.nStart_angle)*m_bufferA.nAngleResolution 
+				+ i * m_bufferA.nAngleResolution / getStartAngle();
+			temp.dist[i] = m_bufferA.dist[index];
+			temp.rssi[i] = m_bufferA.rssi[index];
+		}
+	}
+	else
+	{
+		for (int i = 0; i < temp.nData_len; i++) {
+			int index = (getStartAngle() - m_bufferB.nStart_angle)*m_bufferB.nAngleResolution
+				+ i * m_bufferB.nAngleResolution / getStartAngle();
+			temp.dist[i] = m_bufferB.dist[index];
+			temp.rssi[i] = m_bufferB.rssi[index];
+		}
+	}
+	
+	memcpy(scandata, &temp, sizeof(temp));
+
+	// switch buffer
 	m_bBufferSwitch = !m_bBufferSwitch;
 	return true;
 }
@@ -216,7 +225,7 @@ int CSICKLaserScanner::setAngleResolution(int resol) {
 	// 모델별 파라미터 설정
 	switch (m_eModel) {
 	case eSICKLaserScannerModel::LMS1xx:
-		if (resol != 4|| resol != 2)
+		if (resol != 4|| resol != 2 || resol != 1)
 		{
 			g_eventManager->PushTask(MSG_WARN, getSensorName(), WARN_INVALID_ANGLE_RESOLUTION, true, false);
 			return RETURN_FAILED;
@@ -236,7 +245,7 @@ int CSICKLaserScanner::setAngleResolution(int resol) {
 int CSICKLaserScanner::setStartAngle(int angle) {
 	if (angle < -45 || angle > 225 || angle > m_nEndAngle)
 	{
-		//g_eventManager->PushTask(MSG_ERROR, getSensorName(), ERROR_LASER_INVALID_PARAMETER, true, true);
+		//g_eventManager->PushTask(MSG_WARN, getSensorName(), WARN_IN, true, true);
 		return RETURN_NON_ERROR;
 	}
 	m_nStartAngle = angle;
